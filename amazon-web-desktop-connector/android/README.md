@@ -2,7 +2,7 @@
 
 An Android app that scans the QR codes of [Hitster](https://hitstergame.com) cards and plays the songs on **Amazon Music** in the Firefox browser of your computer. It is the phone half of a pair. The other half is the Firefox add-on [amazon-music-connector-for-hitster-addon](../addon).
 
-The app does not play any music itself. Amazon Music has no public search API for private accounts, so the add-on drives your open Amazon Music tab, as if you had searched for the song yourself.
+The app does not play any music itself. Amazon offers no public search API for private accounts, so the add-on searches in your open Amazon Music tab, as if you had searched for the song yourself.
 
 ## How it works
 

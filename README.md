@@ -1,6 +1,6 @@
 # Amazon Music Connector for Hitster
 
-Scan a [Hitster](https://hitstergame.com) card with your phone and the song plays on Amazon Music. Amazon Music has no public search API for private accounts, so both products use what is on the screen or in the player.
+Scan a [Hitster](https://hitstergame.com) card with your phone and the song plays on Amazon Music. Amazon offers no public search API for private accounts, so this project controls Amazon Music itself, either the app on your phone or the web player in your browser.
 
 | Folder | What it is |
 | --- | --- |
