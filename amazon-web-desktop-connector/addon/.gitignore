@@ -1,0 +1,7 @@
+.*
+!.gitignore
+dist/
+node_modules/
+__pycache__/
+src/app/*.apk
+src/app/apk.json

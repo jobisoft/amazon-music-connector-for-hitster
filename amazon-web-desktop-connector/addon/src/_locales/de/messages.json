@@ -1,0 +1,287 @@
+{
+  "extensionName": {
+    "message": "Amazon Music Connector for Hitster"
+  },
+  "extensionDescription": {
+    "message": "Lässt die Hitster-Android-App Songs in einem geöffneten Amazon-Music-Tab abspielen."
+  },
+  "optionsPageTitle": {
+    "message": "Amazon Music Connector for Hitster"
+  },
+  "optionsSubtitle": {
+    "message": "Hitster-Karte mit dem Handy scannen und den Song in diesem Browser über Amazon Music abspielen."
+  },
+  "bannerChecking": {
+    "message": "Suche nach der Hilfsanwendung ..."
+  },
+  "bannerConnectedTitle": {
+    "message": "Hilfsanwendung verbunden"
+  },
+  "bannerConnectedDetail": {
+    "message": "Version $1 läuft und wartet auf Port $2."
+  },
+  "bannerErrorTitle": {
+    "message": "Hilfsanwendung nicht verfügbar"
+  },
+  "bannerErrorDetail": {
+    "message": "Das Add-on erreicht seine Hilfsanwendung nicht. Firefox meldet: $1"
+  },
+  "btnRetry": {
+    "message": "Erneut prüfen"
+  },
+  "setupHeading": {
+    "message": "Einrichtung"
+  },
+  "setupIntro": {
+    "message": "Dieses Add-on spielt die Songs gescannter Hitster-Karten in einem geöffneten Amazon-Music-Tab ab. Ein Firefox-Add-on kann selbst keinen Netzwerkport öffnen, daher braucht es eine kleine Hilfsanwendung auf diesem Computer."
+  },
+  "setupArchitectureLi1": {
+    "message": "Die Android-App scannt den QR-Code einer Karte und ermittelt Titel und Interpret des Songs."
+  },
+  "setupArchitectureLi2": {
+    "message": "Die App schickt Titel und Interpret an die Hilfsanwendung, die im lokalen Netzwerk lauscht."
+  },
+  "setupArchitectureLi3": {
+    "message": "Die Hilfsanwendung reicht die Anfrage an dieses Add-on weiter, das den Song in deinem Amazon-Music-Tab sucht und abspielt."
+  },
+  "setupSecurityNotice": {
+    "message": "Die Hilfsanwendung nimmt Anfragen aus deinem lokalen Netzwerk an, aber nur mit dem geheimen Token, der nach der Einrichtung auf dieser Seite steht. Gib den Token nicht weiter und nutze die Einrichtung nur in Netzwerken, denen du vertraust."
+  },
+  "setupDownloadTitle": {
+    "message": "Hilfsanwendung herunterladen"
+  },
+  "btnDownload": {
+    "message": "Herunterladen"
+  },
+  "setupInstructions": {
+    "message": "Entpacke das Archiv und starte den Installer:"
+  },
+  "setupInstallWin": {
+    "message": "Doppelklick auf"
+  },
+  "setupInstallUnix": {
+    "message": "Öffne ein Terminal im entpackten Ordner und führe aus:"
+  },
+  "setupPythonUnix": {
+    "message": "Die Hilfsanwendung benötigt Python 3. Falls es fehlt, installiere es zuerst:"
+  },
+  "setupRestart": {
+    "message": "Starte Firefox nach der Installation neu. Diese Seite zeigt dann den Status der Hilfsanwendung."
+  },
+  "setupSnapNotice": {
+    "message": "Firefox als Snap oder Flatpak läuft in einer Sandbox, die Native Messaging blockieren kann. Wird die Hilfsanwendung nach der Installation nicht gefunden, probiere das Firefox-Paket von Mozilla oder deiner Distribution."
+  },
+  "androidHeading": {
+    "message": "Manuelle Einrichtung"
+  },
+  "androidIntro": {
+    "message": "Die App findet diesen Computer von selbst. Nur wenn das nicht klappt, trage eine dieser Adressen und den Token in der App unter Manuelle Einrichtung ein."
+  },
+  "labelAddress": {
+    "message": "Serveradresse"
+  },
+  "labelToken": {
+    "message": "Token"
+  },
+  "labelPort": {
+    "message": "Port"
+  },
+  "btnShow": {
+    "message": "Anzeigen"
+  },
+  "btnHide": {
+    "message": "Verbergen"
+  },
+  "btnCopy": {
+    "message": "Kopieren"
+  },
+  "btnCopied": {
+    "message": "Kopiert"
+  },
+  "btnRegenerate": {
+    "message": "Neuer Token"
+  },
+  "btnSave": {
+    "message": "Speichern"
+  },
+  "confirmRegenerate": {
+    "message": "Neuen Token erzeugen? Die Android-App muss danach mit dem neuen Token aktualisiert werden."
+  },
+  "helperHeading": {
+    "message": "Hilfsanwendung"
+  },
+  "infoAddonVersion": {
+    "message": "Add-on-Version"
+  },
+  "infoHostVersion": {
+    "message": "Version der Hilfsanwendung"
+  },
+  "infoPython": {
+    "message": "Python-Version"
+  },
+  "infoSystem": {
+    "message": "System"
+  },
+  "infoPid": {
+    "message": "Prozess-ID"
+  },
+  "infoUptime": {
+    "message": "Laufzeit"
+  },
+  "infoConfigPath": {
+    "message": "Konfigurationsdatei"
+  },
+  "infoServer": {
+    "message": "HTTP-Server"
+  },
+  "infoServerRunning": {
+    "message": "Lauscht auf Port $1"
+  },
+  "infoServerStopped": {
+    "message": "Läuft nicht ($1)"
+  },
+  "infoTotalRequests": {
+    "message": "Empfangene Abspielanfragen"
+  },
+  "requestsHeading": {
+    "message": "Letzte Anfragen"
+  },
+  "btnTest": {
+    "message": "Testanfrage senden"
+  },
+  "testRunning": {
+    "message": "Sende Testanfrage ..."
+  },
+  "testAnswer": {
+    "message": "Die Hilfsanwendung antwortete mit HTTP $1: $2"
+  },
+  "testFailed": {
+    "message": "Die Testanfrage ist fehlgeschlagen: $1"
+  },
+  "thTime": {
+    "message": "Zeit"
+  },
+  "thSong": {
+    "message": "Song"
+  },
+  "thResult": {
+    "message": "Ergebnis"
+  },
+  "requestsEmpty": {
+    "message": "Noch keine Anfragen."
+  },
+  "status_ok": {
+    "message": "Abgespielt"
+  },
+  "status_error": {
+    "message": "Fehlgeschlagen"
+  },
+  "status_unauthorized": {
+    "message": "Abgelehnt"
+  },
+  "amazonHeading": {
+    "message": "Amazon Music"
+  },
+  "amazonIntro": {
+    "message": "Das Add-on spielt die Songs in einem Amazon-Music-Tab dieses Browsers ab. Öffne den Webplayer, melde dich mit deinem Amazon-Konto an und lass den Tab während des Spiels offen."
+  },
+  "amazonDomain": {
+    "message": "Shop"
+  },
+  "btnOpenAmazon": {
+    "message": "Amazon Music öffnen"
+  },
+  "amazonNoTabs": {
+    "message": "Es ist noch kein Amazon-Music-Tab offen."
+  },
+  "amazonScriptActive": {
+    "message": "Content-Script aktiv"
+  },
+  "amazonScriptInactive": {
+    "message": "Content-Script nicht geladen"
+  },
+  "qrHeading": {
+    "message": "Android-App installieren"
+  },
+  "qrIntro": {
+    "message": "Scanne den Code mit der Kamera deines Handys. Handy und Computer müssen im selben Netzwerk sein."
+  },
+  "qrStep1": {
+    "message": "Öffne den Link, den die Kamera anzeigt."
+  },
+  "qrStep2": {
+    "message": "Tippe auf den Download-Knopf."
+  },
+  "qrStep3": {
+    "message": "Öffne die heruntergeladene Datei. Wenn Android fragt, erlaube deinem Browser, Apps aus dieser Quelle zu installieren."
+  },
+  "qrStep4": {
+    "message": "Starte die App. Sie findet diesen Computer von selbst, bestätige dann die Anfrage auf dieser Seite."
+  },
+  "qrLinkLabel": {
+    "message": "Link:"
+  },
+  "qrAddressLabel": {
+    "message": "Adresse dieses Computers"
+  },
+  "qrApkInfo": {
+    "message": "App-Version $1, $2 MB"
+  },
+  "qrNoApk": {
+    "message": "In diesem Build des Add-ons steckt keine Android-App. Baue die Android-App und danach das Add-on neu, siehe README."
+  },
+  "qrChecking": {
+    "message": "Prüfe die Android-App ..."
+  },
+  "qrTransferring": {
+    "message": "Die Android-App wird an die Hilfsanwendung übergeben: $1 %"
+  },
+  "qrTransferFailed": {
+    "message": "Die Android-App konnte nicht an die Hilfsanwendung übergeben werden: $1"
+  },
+  "infoDebugApi": {
+    "message": "Debug-Schnittstelle"
+  },
+  "infoDebugApiValue": {
+    "message": "Nur von diesem Computer, braucht den Admin-Token aus der Konfigurationsdatei"
+  },
+  "thSource": {
+    "message": "Quelle"
+  },
+  "status_pending": {
+    "message": "Wartet"
+  },
+  "source_phone": {
+    "message": "Handy"
+  },
+  "source_admin": {
+    "message": "Entwickler"
+  },
+  "source_unknown": {
+    "message": "Unbekannt"
+  },
+  "qrNetworkHint": {
+    "message": "Wenn das Handy den Link nicht öffnen kann, prüfe zuerst, ob es im selben WLAN wie dieser Computer ist. Mobile Daten und Gastnetze funktionieren nicht. Ist das in Ordnung, blockiert vielleicht eine Firewall auf diesem Computer den Port 8765."
+  },
+  "pairHeading": {
+    "message": "Ein Handy möchte sich verbinden"
+  },
+  "pairIntro": {
+    "message": "Erlaube nur dein eigenes Handy. Ein erlaubtes Gerät kann auf diesem Computer Songs starten."
+  },
+  "btnAllow": {
+    "message": "Erlauben"
+  },
+  "btnDeny": {
+    "message": "Ablehnen"
+  },
+  "pairFrom": {
+    "message": "von $1"
+  },
+  "openAccessLabel": {
+    "message": "Anfragen ohne Kopplung erlauben"
+  },
+  "openAccessHelp": {
+    "message": "Jedes Gerät in diesem Netzwerk kann dann ohne Token Songs auf diesem Computer starten. Nutze das nur in einem Netzwerk, dem du vertraust, etwa deinem WLAN zu Hause."
+  }
+}

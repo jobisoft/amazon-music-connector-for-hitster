@@ -1,0 +1,7 @@
+{
+  "name": "amazon_music_connector_host",
+  "description": "Native helper for the Amazon Music Connector for Hitster add-on",
+  "path": "/path/to/native-messaging-app/amazon_music_connector_host.py",
+  "type": "stdio",
+  "allowed_extensions": ["amazon-music-connector-for-hitster@jobisoft.de"]
+}

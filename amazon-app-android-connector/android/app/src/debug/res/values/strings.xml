@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- the debug app sits next to the production app on the phone: its own name -->
+    <string name="app_name">Amazon Music Connector for Hitster (Debug)</string>
+</resources>

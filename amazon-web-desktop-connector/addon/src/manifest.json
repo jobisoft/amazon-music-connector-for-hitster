@@ -1,0 +1,67 @@
+{
+  "manifest_version": 2,
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "amazon-music-connector-for-hitster@jobisoft.de",
+      "strict_min_version": "115.0"
+    }
+  },
+  "name": "__MSG_extensionName__",
+  "version": "1.0.0",
+  "author": "John Bieling",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "en",
+  "permissions": [
+    "nativeMessaging",
+    "storage",
+    "http://127.0.0.1/*",
+    "https://music.amazon.com/*",
+    "https://music.amazon.de/*",
+    "https://music.amazon.co.uk/*",
+    "https://music.amazon.fr/*",
+    "https://music.amazon.it/*",
+    "https://music.amazon.es/*",
+    "https://music.amazon.co.jp/*",
+    "https://music.amazon.ca/*",
+    "https://music.amazon.com.au/*",
+    "https://music.amazon.com.br/*",
+    "https://music.amazon.in/*",
+    "https://music.amazon.com.mx/*"
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "icons": {
+    "32": "icon32.png",
+    "64": "icon64.png"
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://music.amazon.com/*",
+        "https://music.amazon.de/*",
+        "https://music.amazon.co.uk/*",
+        "https://music.amazon.fr/*",
+        "https://music.amazon.it/*",
+        "https://music.amazon.es/*",
+        "https://music.amazon.co.jp/*",
+        "https://music.amazon.ca/*",
+        "https://music.amazon.com.au/*",
+        "https://music.amazon.com.br/*",
+        "https://music.amazon.in/*",
+        "https://music.amazon.com.mx/*"
+      ],
+      "js": [
+        "content/amazon-music.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}

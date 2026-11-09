@@ -1,0 +1,10 @@
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+dist/*.apk
+tools/debug.log
+dist/mapping/
+
+__pycache__/
+*.pyc

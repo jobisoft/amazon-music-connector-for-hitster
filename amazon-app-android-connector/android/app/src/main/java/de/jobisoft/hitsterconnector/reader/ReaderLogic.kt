@@ -1,0 +1,151 @@
+package de.jobisoft.hitsterconnector.reader
+
+import de.jobisoft.hitsterconnector.util.CsvLines
+
+/**
+ * What the user said about a card: it is wrong. "Matches" does not exist: a card that needs no change
+ * is simply not reported, the next scan goes on. [wire] is the word in the results file and in the log.
+ */
+enum class Verdict(val wire: String) {
+    WRONG("wrong");
+
+    companion object {
+        fun fromWire(text: String): Verdict? = entries.firstOrNull { it.wire == text }
+    }
+}
+
+/** The values of [ResultRow.source]. Rows without the column are from the reader. */
+object ReportSource {
+    const val READER = "reader"
+    const val SCAN = "scan"
+    const val QUIZ = "quiz"
+}
+
+/**
+ * One line of `reader_results.csv`, the local log of the reports (only "wrong" ones exist). [cardYear],
+ * [cardTitle] and [cardArtist] are what the card says (all three, the unchanged ones equal ours). Rows of
+ * the first version of the file have no titles and a year only: [cardTitle] and [cardArtist] are null there. The column `suspect` of older files is dropped.
+ */
+data class ResultRow(
+    val time: String,
+    val setFile: String,
+    val card: Int,
+    val verdict: Verdict,
+    val ourYear: Int?,
+    val ourTitle: String,
+    val ourArtist: String,
+    val cardYear: Int?,
+    val cardTitle: String?,
+    val cardArtist: String?,
+    /** Where the answer came from: the reader mode, or a card of the game ("scan", "quiz"). */
+    val source: String = ReportSource.READER
+) {
+    val key: String get() = ReaderLogic.key(setFile, card)
+}
+
+/** What the user entered for a wrong card, validated: all three values, at least one differs from ours. */
+data class Edit(val year: Int, val title: String, val artist: String)
+
+/** The cards with a correction: the number the screen shows next to the cards scanned in this visit. */
+data class Counters(val updated: Int)
+
+/** The logic of the reader mode without Android: CSV lines, the year check, the counters. */
+object ReaderLogic {
+    const val RESULT_HEADER = "time,set,card,verdict,ourYear,ourTitle,ourArtist,cardYear,cardTitle,cardArtist,source"
+
+    fun key(file: String, card: Int) = "$file#$card"
+
+    fun currentYear(): Int = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+
+    fun parseCsvLine(line: String): List<String> = CsvLines.parse(line)
+
+    fun csvField(value: String): String = CsvLines.field(value)
+
+    /** "1984" is a year, "198", "19840", "abcd", "1899" and next year are not. Returns the year or null. */
+    fun validateYear(text: String, currentYear: Int): Int? {
+        val t = text.trim()
+        if (t.length != 4 || !t.all { it in '0'..'9' }) return null
+        val year = t.toInt()
+        return if (year in 1900..currentYear) year else null
+    }
+
+    /** The line of a row, every field quoted when it needs it (commas and quotes in titles survive). */
+    fun resultLine(row: ResultRow): String = CsvLines.line(
+        listOf(
+            row.time, row.setFile, row.card.toString(), row.verdict.wire,
+            row.ourYear?.toString().orEmpty(), row.ourTitle, row.ourArtist,
+            row.cardYear?.toString().orEmpty(), row.cardTitle.orEmpty(), row.cardArtist.orEmpty(),
+            row.source
+        )
+    )
+
+    /**
+     * A line of `reader_results.csv`, null for a header and for lines that are not one. 11 fields: the
+     * current format. Older files had a column `suspect` (0 or 1) before `source` (12 fields) or instead of it
+     * (11 fields, then the 11th is 0 or 1). 7 fields: the first version (year only).
+     */
+    fun parseResultLine(line: String): ResultRow? {
+        if (line.isBlank() || line.startsWith("time,")) return null
+        val f = parseCsvLine(line)
+        return when (f.size) {
+            11, 12 -> {
+                val card = f[2].toIntOrNull() ?: return null
+                // rows of "match" and "skipped" from older versions are not reports: they are dropped
+                val verdict = Verdict.fromWire(f[3]) ?: return null
+                ResultRow(
+                    f[0], f[1], card, verdict, f[4].toIntOrNull(), f[5], f[6], f[7].toIntOrNull(),
+                    f[8], f[9],
+                    (if (f.size == 12) f[11] else f[10]).takeIf { it.isNotBlank() && it != "0" && it != "1" } ?: ReportSource.READER
+                )
+            }
+            7 -> {
+                val card = f[2].toIntOrNull() ?: return null
+                val verdict = Verdict.fromWire(f[4]) ?: return null
+                ResultRow(f[0], f[1], card, verdict, f[3].toIntOrNull(), "", "", f[5].toIntOrNull(), null, null)
+            }
+            else -> null
+        }
+    }
+
+    /** Which of year, title and artist the card says differently. Rows of the first version can only differ in the year. */
+    fun changed(row: ResultRow): List<String> {
+        val list = ArrayList<String>()
+        if (row.cardYear != null && row.cardYear != row.ourYear) list.add("year")
+        if (row.cardTitle != null && row.cardTitle.trim() != row.ourTitle.trim()) list.add("title")
+        if (row.cardArtist != null && row.cardArtist.trim() != row.ourArtist.trim()) list.add("artist")
+        return list
+    }
+
+    /**
+     * The "Save" rule of the form for a wrong card: the year is four digits from 1900 to this year, title
+     * and artist are not empty (after trimming, a line break counts as a space), and at least one of the
+     * three differs from ours. Returns the values to save, or null if the form is not ready.
+     */
+    fun evaluateEdit(
+        yearText: String, title: String, artist: String,
+        ourYear: Int?, ourTitle: String, ourArtist: String, currentYear: Int
+    ): Edit? {
+        val year = validateYear(yearText, currentYear) ?: return null
+        val t = collapse(title)
+        val a = collapse(artist)
+        if (t.isEmpty() || a.isEmpty()) return null
+        val differs = year != ourYear || t != ourTitle.trim() || a != ourArtist.trim()
+        return if (differs) Edit(year, t, a) else null
+    }
+
+    /** Line breaks, tabs and runs of spaces become one space, the ends are trimmed: no newline reaches the CSV or the search text. */
+    fun collapse(text: String): String = text.replace(Regex("\\s+"), " ").trim()
+
+    /** The last report per card. */
+    fun latestAnswers(rows: List<ResultRow>): Map<String, ResultRow> {
+        val latest = LinkedHashMap<String, ResultRow>()
+        for (row in rows) latest[row.key] = row
+        return latest
+    }
+
+    /** How many cards have a report (one per card, the last one counts). */
+    fun counters(rows: List<ResultRow>): Counters = Counters(latestAnswers(rows).size)
+
+    /** "(card#300)", the number in the shape of the printed card. */
+    fun cardNumberText(card: Int): String = "(card#$card)"
+}
