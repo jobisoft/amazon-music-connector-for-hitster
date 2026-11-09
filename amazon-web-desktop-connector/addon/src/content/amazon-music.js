@@ -515,7 +515,7 @@
     endHandled = true;
     setPlaying(false).catch(() => media.pause());
   }
-  // "timeupdate" does not bubble, the capture phase gets it; the timer is for the moments it is late
+  // "timeupdate" does not bubble, so the capture phase gets it. The timer is for the moments it is late.
   document.addEventListener('timeupdate', stopAtEnd, true);
   setInterval(stopAtEnd, 250);
 

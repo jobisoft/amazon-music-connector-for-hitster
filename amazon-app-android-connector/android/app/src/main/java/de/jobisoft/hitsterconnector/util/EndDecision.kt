@@ -30,8 +30,8 @@ object MuteHold {
 }
 
 /**
- * The state of the end guard without Android, to test what it must and must not do. The one rule
- * that was the bug: **the guard never disarms itself**, not after the end either.
+ * The state of the end guard without Android, to test what it must and must not do. The one rule:
+ * **the guard never disarms itself**, not after the end either.
  */
 class GuardModel {
     var watching = false

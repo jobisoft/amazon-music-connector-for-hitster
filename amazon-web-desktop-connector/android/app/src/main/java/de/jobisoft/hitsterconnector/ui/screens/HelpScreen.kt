@@ -65,7 +65,7 @@ fun HelpScreen(
                     content = """
                         • Tap "Scan QR Code" and point the camera at a card.
                         • The song starts on the computer. The app does not show it, to keep the game fair.
-                        • "Send again" plays the song of the last card once more.
+                        • The buttons jump 10 seconds back or forward, stop the song and play it again from the start offset.
                     """.trimIndent()
                 )
 

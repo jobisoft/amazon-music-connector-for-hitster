@@ -3,7 +3,7 @@
  *
  * Keeps one native messaging connection to the helper app. The helper app
  * listens on the local network and forwards the requests it gets as
- *   { requestId, type: "play" | "dom" | "tabs", ... }
+ *   { requestId, type: "play" | "control" | "autoplay" | "dom" | "tabs" | "navigate" | "act" | "reload", ... }
  * The add-on answers each one with
  *   { requestId, cmd: "result", result: { ok, ... } }
  *
@@ -11,7 +11,7 @@
  *   { requestId, ok: true, result } or { requestId, ok: false, error }.
  *
  * The options page talks to this script via runtime messages:
- *   { cmd: "getInfo" | "reconnect" | "setConfig" | "amazonStatus" | "openAmazon" }
+ *   { cmd: "getInfo" | "reconnect" | "setConfig" | "pairDecide" | "amazonStatus" | "openAmazon" }
  */
 
 const NATIVE_APP = 'amazon_music_connector_host';
@@ -255,7 +255,7 @@ async function handleForwarded(request) {
 /**
  * A play request of the Android app. Searches the song on the song search page
  * of the open Amazon Music tab and lets the content script click the best hit.
- * The answer must not tell title or artist, the phone shows it to the players.
+ * The phone must not show title or artist to the players (the Android app hides them).
  */
 let playQueue = Promise.resolve();
 

@@ -19,7 +19,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * The results of the year check, shared by the reader mode and the "Report as wrong" button of the
+ * The reports of wrong cards, shared by the reader mode and the "Report as wrong" button of the
  * game: `reader_results.csv` in the files of the app (a local log of the verdicts, also in the
  * production build), the counters, and the events to the debug sink (`DebugLog`, invisible in the
  * screens, nothing in the production build). A "wrong" verdict also writes a correction
@@ -96,7 +96,7 @@ class ReaderStore @Inject constructor(
         return row
     }
 
-    /** The event of a row. `title`, `artist` and `yearOnCard` are the names of the first version, kept for the old tools. */
+    /** The event of a row. `title`, `artist` and `yearOnCard` repeat our values and the card year under the field names that tools/reader_summary.py reads. */
     fun eventData(row: ResultRow, ourTitle: String = row.ourTitle, ourArtist: String = row.ourArtist): Map<String, Any?> = mapOf(
         "set" to row.setFile, "card" to row.card, "verdict" to row.verdict.wire,
         "ok" to false,

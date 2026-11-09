@@ -8,7 +8,7 @@ object QRCodeParser {
     /**
      * Parse a QR code URL and extract the card identifier
      * Example: http://hitstergame.com/de/aaaa0039/00181
-     * Returns: aaaa0039/00181 or the full URL
+     * Returns the trimmed text if it is a Hitster or YouTube address, otherwise null.
      */
     fun parseHitsterUrl(qrCodeContent: String): String? {
         val normalizedContent = qrCodeContent.trim()

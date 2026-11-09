@@ -68,7 +68,7 @@ class QuizPickerTest {
 
     @Test
     fun theSameSongOnSeveralCardsOfAnEditionComesOncePerRound() {
-        // "Kiss Me Thru The Phone" was seen at the cards 217, 205 and 217 of hitster-de-aaaa0019.csv in the old random pick
+        // "Kiss Me Thru The Phone" shows up at the cards 217, 205 and 217 of hitster-de-aaaa0019.csv
         val edition = mapOf(
             "hitster-de-aaaa0019.csv" to listOf(
                 CSVSong(217, "Kiss Me Thru The Phone", "Soulja Boy", 2008),

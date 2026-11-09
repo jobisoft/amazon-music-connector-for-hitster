@@ -50,7 +50,7 @@ data class EndEvent(val song: String?, val mediaId: String?, val reason: String)
  *     the session, skipping, another queue item, and a poll once a second as a fallback). If the session
  *     is on another item than the card song and plays, it pauses at once. This holds for the whole
  *     life of the card song, also after the song has ended: Amazon may go on to the next item of its
- *     queue (build 1242, "Padam Padam" then "The Motto"), and that must not be heard. It is the only
+ *     queue, and that must not be heard. It is the only
  *     thing that pauses.
  *  2. **Every song ends muted.** One second before the end the music stream is muted (not paused), the
  *     song plays to its true end in silence. The stream stays muted until the next card has jumped

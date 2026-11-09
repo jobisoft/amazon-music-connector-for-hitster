@@ -39,7 +39,7 @@ object RestartDecision {
 /**
  * The switch detector, the main guard of a card song. It watches from the start of the song until the
  * next request of the app, also after the song has ended: Amazon may go on to the next item of its
- * queue (build 1242: "The Motto" after "Padam Padam"), and that item must not play. It pauses when the
+ * queue, and that item must not play. It pauses when the
  * session is on anything but the guarded song and plays (or buffers). Something that does not play is
  * left alone. An item that shows only another id, without a title yet, waits: the player may be
  * between two songs.

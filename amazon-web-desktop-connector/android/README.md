@@ -20,7 +20,7 @@ This app is a fork of [SubSonicSter](https://codeberg.org/langhaarschneider/SubS
 - QR code scanning (CameraX and ZXing) and the parsing of the Hitster URLs
 - the import and management of the CSV card sets
 
-Removed are the SubSonic client and the audio player. New are the connector client (`ConnectorRepository`), the connector settings and a result screen that hides the song.
+The app has a connector client (`ConnectorRepository`), connector settings and a result screen that hides the song.
 
 ## Setup
 
@@ -34,11 +34,11 @@ If the search finds nothing, **Manual setup** takes the server address and the t
 
 ## Card sets
 
-The card sets of [songseeker-hitster-playlists](https://github.com/andygruber/songseeker-hitster-playlists) come with the app (the folder `card-sets/assets/csv` at the top of this repository, a snapshot, see `LICENSES_THIRD_PARTY.md`; Gradle adds it to the assets of the app). They are copied into the storage of the app on the first start, so nothing has to be imported. To refresh the snapshot, copy the `hitster-*.csv` files from that project into `card-sets/assets/csv`. The button "Add all CSV-Files" in the card config loads the current ones from the web at any time.
+The card sets of [songseeker-hitster-playlists](https://github.com/andygruber/songseeker-hitster-playlists) come with the app (the folder `card-sets/assets/csv` at the top of this repository, a snapshot, see `LICENSES_THIRD_PARTY.md`). Gradle adds it to the assets of the app. They are copied into the storage of the app on the first start, so nothing has to be imported. To refresh the snapshot, copy the `hitster-*.csv` files from that project into `card-sets/assets/csv`. The button "Add all CSV files" in the card config loads the current ones from the web at any time.
 
 ## Unknown cards
 
-If a card is in none of the card sets (a new edition, for example), the app does not stop. It sends one of three test songs to the computer. The screen still shows the error (which card set is missing and which card was scanned), and says that a test song is a stand-in. That way the whole chain from the phone to Amazon Music can be tried without the right card set. The text tells which card set is missing.
+If a card is in none of the card sets (a new edition, for example), the app does not stop. It sends one of three test songs to the computer. The screen still shows the error (which card set is missing and which card was scanned). That way the whole chain from the phone to Amazon Music can be tried without the right card set.
 
 ## Security note
 
@@ -52,7 +52,7 @@ Open the project in Android Studio, or run:
 ./gradlew assembleDebug
 ```
 
-The build needs the Android SDK (compileSdk 36) and a JDK 17 or newer. Kotlin warnings are treated as errors, as in the upstream project.
+The build needs the Android SDK (compileSdk 36) and a JDK 17 to 24 (not 25), see `../build.sh`. Kotlin warnings are treated as errors, as in the upstream project.
 
 ## License
 

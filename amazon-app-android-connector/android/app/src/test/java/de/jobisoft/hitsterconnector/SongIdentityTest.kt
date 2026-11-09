@@ -12,7 +12,7 @@ import org.junit.Test
 
 class SongIdentityTest {
 
-    // the case of build 1242: Padam Padam ended, Amazon went on to The Motto
+    // the song ended and Amazon went on to the next item of its queue
     private val padamId = "B0PADAM"
     private val motto = "The Motto" to "B09VD84Y43"
 

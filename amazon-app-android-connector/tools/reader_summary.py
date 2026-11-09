@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summary of the reader mode (debug build of the app): what the tester found on the cards.
+"""Summary of the reader mode (events of the debug build): what the tester found on the cards.
 
   python3 reader_summary.py [debug.log] [reader_mismatches.csv]
 
@@ -7,7 +7,7 @@ Reads the log of debug_sink.py (default: debug.log next to this script), one JSO
 looks at the events of the reader mode:
 
   reader verdict   one answer, sent when it was given
-  reader dump      the same rows again (sent by builds that had the button "Send all results again", the app has none any more, old logs still have them)
+  reader dump      the same rows again
   reader card      a scan (only used for the title and the artist)
 
 Per card the LATEST answer counts (a skipped card is no answer). A "wrong" answer carries what the card
@@ -20,8 +20,7 @@ artist differ:
 `source` says where the answer came from: reader (the reader mode), scan or quiz (the "Report as wrong"
 button of the game). Events without it are from the reader.
 
-Events of the first version (a year only: yearOnCard, title, artist) are still read, they can only
-differ in the year.
+Events with a year only (yearOnCard, title, artist) can differ in the year only.
 """
 import csv
 import json

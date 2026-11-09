@@ -46,7 +46,7 @@ user has allowed open access on the options page, for a trusted network):
                    -> {"ok": bool, "message"?: str, "error"?: str}
 
 Debug (header "Authorization: Bearer <adminToken>", and only from 127.0.0.1):
-  GET  /info                 everything the options page shows, plus config
+  GET  /info                 what the options page shows, without the token
   GET  /log?since=R&wait=S   log entries newer than revision R, waits up to S
                              seconds (max 30) if there are none yet
   GET  /tabs                 the open Amazon Music tabs
@@ -80,7 +80,7 @@ Messages add-on -> host:
 Messages host -> add-on:
   { "requestId", "ok": true, "result": any }            reply to a command
   { "requestId", "ok": false, "error": str }
-  { "requestId", "type": "play" | "dom" | "tabs" | "navigate" | "act" | "reload", ... } forwarded request
+  { "requestId", "type": "play" | "control" | "autoplay" | "dom" | "tabs" | "navigate" | "act" | "reload", ... } forwarded request
   { "event": "pairRequest", "id", "name", "remote" }     a phone asks to be allowed
 """
 
@@ -407,7 +407,7 @@ PAGE_EN = {
     "steps": [
         "Tap the button to download the file.",
         "Open the downloaded file. Android asks whether your browser may install apps. Allow it for this one time.",
-        "Open the app, go to Connector Config and enter the server address and the token from the options page of the Firefox add-on.",
+        "Open the app. It finds this computer by itself, then confirm the request on the options page of the Firefox add-on. If that fails, use Manual setup and enter the server address and the token from the options page.",
     ],
 }
 PAGE_DE = {
@@ -419,7 +419,7 @@ PAGE_DE = {
     "steps": [
         "Tippe auf den Knopf, um die Datei herunterzuladen.",
         "Öffne die heruntergeladene Datei. Android fragt, ob dein Browser Apps installieren darf. Erlaube es dieses eine Mal.",
-        "Öffne die App, gehe zu Connector Config und trage Serveradresse und Token von der Optionsseite des Firefox-Add-ons ein.",
+        "Öffne die App. Sie findet diesen Computer von selbst, bestätige dann die Anfrage auf der Optionsseite des Firefox-Add-ons. Klappt das nicht, öffne Manuelle Einrichtung und trage Serveradresse und Token von der Optionsseite ein.",
     ],
 }
 

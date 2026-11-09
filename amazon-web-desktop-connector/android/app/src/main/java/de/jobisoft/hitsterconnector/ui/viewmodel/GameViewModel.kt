@@ -39,9 +39,9 @@ class GameViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
-    /** Why the last card was not found. Set while a test song stands in for it. */
     private var pollJob: Job? = null
 
+    /** Why the last card was not found. Set while a test song stands in for it. */
     private var lastWarning: String? = null
 
     init {
@@ -60,7 +60,7 @@ class GameViewModel @Inject constructor(
         viewModelScope.launch {
             val config = _uiState.value.config
             if (config == null) {
-                fail("Please enter the server address and the token first.")
+                fail("No computer connected yet. Go back to the start screen, or use Manual setup.")
                 return@launch
             }
 

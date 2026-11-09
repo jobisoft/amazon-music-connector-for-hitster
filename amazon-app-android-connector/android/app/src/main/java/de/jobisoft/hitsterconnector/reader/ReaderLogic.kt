@@ -3,8 +3,8 @@ package de.jobisoft.hitsterconnector.reader
 import de.jobisoft.hitsterconnector.util.CsvLines
 
 /**
- * What the user said about a card: it is wrong. "Matches" does not exist: a card that needs no change
- * is simply not reported, the next scan goes on. [wire] is the word in the results file and in the log.
+ * What the user said about a card. Only "wrong" exists: a card that needs no change is not reported,
+ * the next scan goes on. [wire] is the word in the results file and in the log.
  */
 enum class Verdict(val wire: String) {
     WRONG("wrong");
@@ -23,8 +23,8 @@ object ReportSource {
 
 /**
  * One line of `reader_results.csv`, the local log of the reports (only "wrong" ones exist). [cardYear],
- * [cardTitle] and [cardArtist] are what the card says (all three, the unchanged ones equal ours). Rows of
- * the first version of the file have no titles and a year only: [cardTitle] and [cardArtist] are null there. The column `suspect` of older files is dropped.
+ * [cardTitle] and [cardArtist] are what the card says (all three, the unchanged ones equal ours). A row
+ * with a year only has no titles: [cardTitle] and [cardArtist] are null there.
  */
 data class ResultRow(
     val time: String,
@@ -80,9 +80,8 @@ object ReaderLogic {
     )
 
     /**
-     * A line of `reader_results.csv`, null for a header and for lines that are not one. 11 fields: the
-     * current format. Older files had a column `suspect` (0 or 1) before `source` (12 fields) or instead of it
-     * (11 fields, then the 11th is 0 or 1). 7 fields: the first version (year only).
+     * A line of `reader_results.csv`, null for a header and for lines that are not one. Accepted: 11 fields,
+     * 12 fields (a column `suspect`, 0 or 1, before `source`, it is dropped) and 7 fields (year only).
      */
     fun parseResultLine(line: String): ResultRow? {
         if (line.isBlank() || line.startsWith("time,")) return null
@@ -90,7 +89,7 @@ object ReaderLogic {
         return when (f.size) {
             11, 12 -> {
                 val card = f[2].toIntOrNull() ?: return null
-                // rows of "match" and "skipped" from older versions are not reports: they are dropped
+                // only "wrong" is a report, any other word is dropped
                 val verdict = Verdict.fromWire(f[3]) ?: return null
                 ResultRow(
                     f[0], f[1], card, verdict, f[4].toIntOrNull(), f[5], f[6], f[7].toIntOrNull(),
@@ -107,7 +106,7 @@ object ReaderLogic {
         }
     }
 
-    /** Which of year, title and artist the card says differently. Rows of the first version can only differ in the year. */
+    /** Which of year, title and artist the card says differently. A row with a year only can differ in the year only. */
     fun changed(row: ResultRow): List<String> {
         val list = ArrayList<String>()
         if (row.cardYear != null && row.cardYear != row.ourYear) list.add("year")

@@ -22,12 +22,6 @@
 -keep class **_MembersInjector { *; }
 -dontwarn dagger.hilt.internal.aggregatedroot.codegen.**
 
-# Gson: it is provided by the app (NetworkModule), its models would be read by reflection
--keep class de.jobisoft.hitsterconnector.domain.model.** { *; }
--keepclassmembers,allowobfuscation class * { @com.google.gson.annotations.SerializedName <fields>; }
--keep class com.google.gson.reflect.TypeToken { *; }
--keep class * extends com.google.gson.reflect.TypeToken
-
 # OkHttp / Okio: optional platforms are looked up by name
 -dontwarn okhttp3.internal.platform.**
 -dontwarn org.bouncycastle.**

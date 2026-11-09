@@ -24,4 +24,4 @@ This was a first attempt and is not developed further for now. The add-on is not
 ./build.sh
 ```
 
-builds the Android app (debug APK) and then the add-on with the app inside. The result is `addon/dist/amazon-music-connector-for-hitster_<version>.xpi`. It needs a JDK 17 to 24 (not 25) and the Android SDK, see the header of the script.
+builds the Android app (debug APK) and then the add-on with the app inside. The result is `addon/dist/amazon-music-connector-for-hitster_<version>.xpi` (the dots of the version become underscores). It needs a JDK 17 to 24 (not 25) and the Android SDK, see the header of the script.

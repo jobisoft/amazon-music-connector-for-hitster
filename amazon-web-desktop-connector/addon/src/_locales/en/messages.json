@@ -45,7 +45,7 @@
     "message": "The helper app passes the request to this add-on, which searches and plays the song in your Amazon Music tab."
   },
   "setupSecurityNotice": {
-    "message": "The helper app accepts requests from your local network, but only with the secret token shown on this page after the setup. Do not share the token and use the setup only in networks you trust."
+    "message": "The helper app accepts requests from your local network, but only from devices you allowed or that have the secret token shown on this page, unless you switch on open access. Do not share the token and use the setup only in networks you trust."
   },
   "setupDownloadTitle": {
     "message": "Download the helper app"
@@ -105,7 +105,7 @@
     "message": "Save"
   },
   "confirmRegenerate": {
-    "message": "Create a new token? The Android app must be updated with the new token afterwards."
+    "message": "Create a new token? Phones that were allowed before have to ask for permission again."
   },
   "helperHeading": {
     "message": "Helper app"
@@ -216,7 +216,7 @@
     "message": "Open the downloaded file. If Android asks, allow your browser to install apps from this source."
   },
   "qrStep4": {
-    "message": "Start the app. It finds this computer on its own, then confirm the request on this page."
+    "message": "Start the app. It finds this computer on its own. Then confirm the request on this page."
   },
   "qrLinkLabel": {
     "message": "Link:"
@@ -261,7 +261,7 @@
     "message": "Unknown"
   },
   "qrNetworkHint": {
-    "message": "If the phone cannot open the link, first check that it is in the same Wi-Fi as this computer. Mobile data and guest networks do not work. If that is fine, a firewall on this computer may block port 8765."
+    "message": "If the phone cannot open the link, first check that it is in the same Wi-Fi as this computer. Mobile data and guest networks do not work. If that is fine, a firewall on this computer may block the port of the helper app (8765 by default)."
   },
   "pairHeading": {
     "message": "A phone wants to connect"

@@ -7,7 +7,7 @@ The version is taken from package.json and written into src/manifest.json.
 
 The packed add-on gets the time of the build in its name ("... (build 2026-11-08
 04:12:05)") and in build.json, so that the version that runs can be told apart
-from older ones. The files in src/ stay untouched, a build changes only the XPI.
+from older ones. In src/ a build only writes the version into manifest.json and the bundled app into src/app/.
 
 The Android app is bundled in the add-on, so that the helper app can hand it
 to the phone. Without --apk the script looks for a debug or release build of

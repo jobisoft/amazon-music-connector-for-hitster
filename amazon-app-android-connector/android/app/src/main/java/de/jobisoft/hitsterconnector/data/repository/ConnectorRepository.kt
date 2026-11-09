@@ -59,7 +59,7 @@ data class PlayerPosition(val position: Float, val duration: Float, val playing:
  *  - Control: the MediaSession of Amazon Music, found through MediaSessionManager. Android
  *    allows this only for an app with notification access (see [AmazonMusicListener]).
  *
- * The README says what is verified and what needs a phone.
+ * The README section "Observed on a phone" lists what was seen on a real phone.
  */
 @Singleton
 class ConnectorRepository @Inject constructor(
@@ -327,7 +327,7 @@ class ConnectorRepository @Inject constructor(
         return a.isNotEmpty() && b.isNotEmpty() && (a.contains(b) || b.contains(a))
     }
 
-    /** A song of 2 minutes starts at a quarter of its length */
+    /** A song shorter than the start offset plus 30 s starts at a quarter of its length (rounded down), any other song at the start offset. */
     private fun startFor(duration: Float, wanted: Float? = null): Float {
         val start = wanted ?: START_AT
         return if (duration > 0 && duration < start + 30) kotlin.math.floor(duration / 4f) else start
@@ -365,14 +365,14 @@ class ConnectorRepository @Inject constructor(
         putString(SearchManager.QUERY, queryFor(title, artist))
     }
 
-    /** (a) The play-from-search intent, aimed at Amazon Music. */
+    /** The play-from-search intent, aimed at Amazon Music. */
     private fun searchIntent(title: String, artist: String) = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
         setPackage(AMAZON_MUSIC)
         putExtras(extrasFor(title, artist))
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 
-    /** (e) The web address of the search, opened in the Amazon Music app. */
+    /** The web address of the search, opened in the Amazon Music app. */
     private fun webIntent(title: String, artist: String): Intent {
         val tld = when (Locale.getDefault().country) {
             "DE", "AT", "CH" -> "de"
@@ -500,13 +500,13 @@ class ConnectorRepository @Inject constructor(
 
     /**
      * Wakes Amazon Music up without opening any screen: a media button key sent to its receiver.
-     * Variant 1 is a broadcast to its exported MediaButtonReceiver, variant 2 goes through the system
+     * First a broadcast to its exported MediaButtonReceiver, then the same key through the system
      * (AudioManager.dispatchMediaKeyEvent). PAUSE, so that nothing starts to play by itself. Returns true
-     * if a session of Amazon Music appeared within 3 s of a variant, then no activity was started.
+     * if a session of Amazon Music appeared within 3 s of one of the two ways, then no activity was started.
      */
     private suspend fun wakeByMediaButton(waitForSession: suspend (String, Long) -> Boolean): Boolean {
         fun key(action: Int) = KeyEvent(action, KeyEvent.KEYCODE_MEDIA_PAUSE)
-        // variant 1: explicit broadcast to the receiver of Amazon Music
+        // first way: explicit broadcast to the receiver of Amazon Music
         val receiver = ComponentName(AMAZON_MUSIC, "com.amazon.music.media.playback.impl.MediaButtonReceiver")
         for (action in listOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) {
             try {
@@ -522,7 +522,7 @@ class ConnectorRepository @Inject constructor(
             DebugLog.log("a0-mediaButton", "worked: broadcast to the receiver")
             return true
         }
-        // variant 2: through the system
+        // second way: through the system
         try {
             val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             audio.dispatchMediaKeyEvent(key(KeyEvent.ACTION_DOWN))
@@ -1165,7 +1165,7 @@ class ConnectorRepository @Inject constructor(
                         )
                     }
                     "seek" -> seek(position ?: return@withContext Result.failure(Exception("position is required.")))
-                    "state" -> Unit // only reads: the pause at the end is gone, the mute at the end is the guard's
+                    "state" -> Unit // only reads, the mute at the end is done by the guard
                     else -> return@withContext Result.failure(Exception("Unknown action: $action"))
                 }
                 // the playhead moved or the song plays again: the guard watches the new situation

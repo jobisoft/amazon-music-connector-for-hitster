@@ -4,13 +4,13 @@ The app plays the song of a scanned [Hitster](https://hitstergame.com) card in t
 
 ## Modes
 
-Home has three buttons.
+Home has three mode buttons.
 
 - **Play Mode:** scan a card. The song starts at 20 s (a quarter of its length for songs under 50 s). The screen hides title, artist and year. Tap the blurred box to show them, tap again to hide them. The revealed box, its blurred form, the Reader Mode box and the report overlay all use the order artist, year (large), title. A green box names the card and its card set ("Displaying card from ..."). An unknown card plays a test song and shows the reason in a red box.
 - **Quiz Mode:** tick card sets (or "All sets"), then "Start". No camera. Random cards play one after another and the next one starts when the song ends. "Play next random card" starts it by hand. A card is played once until the deck is used up. The same song in several editions counts once. The deck is shuffled again then, and the screen says "All cards played, starting again".
 - **Reader Mode:** scan a card to see artist, year, title and "(card#N)" at once. Nothing plays unless you tap "Send to Amazon Music app". It needs no notification access.
 
-"Card Config" lists the card sets and imports CSV files from the phone (several at once). It links to the SongSeeker repository, where card sets can be downloaded. A set that is not installed gives the error "This card set is not installed. Import its CSV file in Card Config." Help, Open Source Licenses and About are on Home.
+"Card Config" lists the card sets and imports CSV files from the phone (several at once). It links to the SongSeeker repository, where card sets can be downloaded. A card of a set that is not installed shows the error "The card set <file> is missing: This card set is not installed. Import its CSV file in Card Config. Card: <url>". Help, Open Source Licenses and About are on Home.
 
 ## Player controls
 
@@ -87,7 +87,7 @@ The loaded song must match the card title (case, accents and "(Remastered)" are 
 
 ## Debug and production apps
 
-`./build.sh` builds the debug app, `./build.sh --prod` the production app. Each file name has the version `1.0.0-<date>.<time>`.
+`./build.sh` builds the debug app, `./build.sh --prod` the production app. Each file name has the version `1.0.0-<yyyymmdd>.<hhmm>-debug` or `-prod`.
 
 | | debug | production |
 | --- | --- | --- |
@@ -115,10 +115,10 @@ Every build writes an uncaught exception to `last_crash.txt` in the app storage 
 The debug app posts its events to a log sink on the PC and to logcat (tag `HitsterConnector`).
 
 - Start the sink with `python3 tools/debug_sink.py` (port 8781, writes `tools/debug.log`, `GET /log` shows the last 300 events).
-- The app finds the sink by itself. At start it sends the UDP broadcast `HITSTER-SINK?` to port 8782 and the sink answers with its HTTP port. Without an answer the app sends nothing, "Send diagnostics" searches again. Allow UDP 8782 in the firewall of the PC. Networks that block broadcasts between devices (some guest Wi-Fi) do not work.
+- The app finds the sink by itself. At start it sends the UDP broadcast `HITSTER-SINK?` to port 8782 and the sink answers with its HTTP port. Without an answer the app sends nothing and searches again with the next events (at most every 10 s). "Send diagnostics" searches at once. Allow UDP 8782 in the firewall of the PC. Networks that block broadcasts between devices (some guest Wi-Fi) do not work.
 - An event is `{"t": epoch ms, "tag": "...", "msg": "...", "data": {...}}`, sent in batches. A sink that is not running is silent.
 - The first event `app started` has the app version, the application id, the device, the Amazon Music version and the notification access.
-- Tags: `play`, `search` (`query`, `result`, `queue`, `final`), `start` (timings and `leakedIntroS`), `mute`, `unmute`, `stop`, `guard` (`switch detected` has `leakedMs`), `leave`, `quiz`, `reader`, `timing`, `foreground`, `ctl`, and the state of all media sessions every 500 ms during a step.
+- Tags: `play`, `search` (`query`, `result`, `queue`, `final`), `start` (timings and `leakedIntroS`), `mute`, `unmute`, `stop`, `guard` (`switch detected` has `leakedMs`), `leave`, `quiz`, `reader`, `timing`, `foreground`, `ctl`, `control`, `diag`, `crash`, `error`, the step tags `a0-mediaButton`, `a-intent`, `b-playFromSearch`, `e-webLink`, and `sessions` (the state of all media sessions every 500 ms during a step).
 - Amazon does not expose its queue, so the `queue` event shows null.
 - **Send diagnostics** on Home runs the play steps once for Blue Monday by New Order and lists Amazon packages and components.
 - `tools/reader_summary.py [debug.log] [reader_mismatches.csv]` reads the sink log and writes the cards whose reported values differ from ours.
@@ -151,4 +151,4 @@ Samsung SM-A326B, Android 13, Amazon Music 26.39.1:
 
 ## Tests
 
-Unit tests (`./gradlew :app:testDebugUnitTest`) cover the logic without a phone: stop confirmation, start jump, end decisions, switch detector, play and restart decisions, control buttons, search query, version check, quiz deck, corrections, reader results, card set names and seeding.
+Unit tests (`./gradlew :app:testDebugUnitTest`) cover the logic without a phone: stop confirmation, start jump, end decisions, switch detector, play and restart decisions, control buttons, search query, version check, quiz deck, corrections, reader results, card set names and seeding, crash reports, sink discovery, song identity, the Send to Amazon rules, the report overlay and the result texts. The Python tools have tests in `tools/test_*.py`.

@@ -2,13 +2,13 @@
 
 This application uses the following open-source libraries. This application is a fork of SubSonicSter by langhaarschneider (https://codeberg.org/langhaarschneider/SubSonicSter), used under the MIT License. See LICENSE.mit.
 
-The libraries below are the ones this application uses. The version numbers may differ from the versions in gradle/libs.versions.toml.
+The libraries below are the ones this application uses. The versions are the ones in gradle/libs.versions.toml.
 
 ---
 
 ## Card data
 
-The card sets in `card-sets/assets/csv` (top of the repository) (which Hitster card number is which song) are a snapshot of
+The card sets in `card-sets/assets/csv` (in the top folder of the repository) map each Hitster card number to a song. They are a snapshot of
 [songseeker-hitster-playlists](https://github.com/andygruber/songseeker-hitster-playlists)
 by Andreas Gruber, commit `26e338f99acb087f3123cd5da7a5831c5895d573`, MIT License.
 The license text is in `card-sets/assets/csv/LICENSE-songseeker-hitster-playlists.txt`.
@@ -26,51 +26,46 @@ row. Replace the file with the merged version when there is one.
 The following libraries are licensed under the Apache License, Version 2.0:
 
 ### AndroidX Libraries
-- **androidx.core:core-ktx** (1.15.0)
-- **androidx.lifecycle:lifecycle-runtime-ktx** (2.8.7)
-- **androidx.lifecycle:lifecycle-viewmodel-compose** (2.8.7)
-- **androidx.activity:activity-compose** (1.9.3)
-- **androidx.compose.ui:ui** (2024.12.01)
-- **androidx.compose.ui:ui-graphics** (2024.12.01)
-- **androidx.compose.ui:ui-tooling-preview** (2024.12.01)
-- **androidx.compose.material3:material3** (1.3.1)
-- **androidx.navigation:navigation-compose** (2.8.5)
-- **androidx.datastore:datastore-preferences** (1.1.1)
+- **androidx.core:core-ktx** (1.17.0)
+- **androidx.lifecycle:lifecycle-runtime-ktx** (2.10.0)
+- **androidx.lifecycle:lifecycle-viewmodel-compose** (2.10.0)
+- **androidx.activity:activity-compose** (1.12.2)
+- **androidx.compose.ui:ui** (Compose BOM 2026.02.00)
+- **androidx.compose.ui:ui-graphics** (Compose BOM 2026.02.00)
+- **androidx.compose.ui:ui-tooling-preview** (Compose BOM 2026.02.00)
+- **androidx.compose.material3:material3** (Compose BOM 2026.02.00)
+- **androidx.compose.material:material-icons-extended** (Compose BOM 2026.02.00)
+- **androidx.navigation:navigation-compose** (2.9.7)
+- **androidx.datastore:datastore-preferences** (1.2.0)
 - Copyright: The Android Open Source Project
 - License: Apache License 2.0
 - https://source.android.com/license
 
 ### Dependency Injection
-- **com.google.dagger:hilt-android** (2.51.1)
-- **androidx.hilt:hilt-navigation-compose** (1.2.0)
+- **com.google.dagger:hilt-android** (2.58)
+- **androidx.hilt:hilt-navigation-compose** (1.3.0)
 - Copyright: Google Inc.
 - License: Apache License 2.0
 - https://github.com/google/dagger
 
 ### Networking
-- **com.squareup.okhttp3:okhttp** (4.12.0)
+- **com.squareup.okhttp3:okhttp** (5.3.2)
 - Copyright: Square, Inc.
 - License: Apache License 2.0
-- - https://square.github.io/okhttp/
-
-### JSON Parsing
-- **com.google.code.gson:gson** (2.10.1)
-- Copyright: Google Inc.
-- License: Apache License 2.0
-- https://github.com/google/gson
+- https://github.com/square/okhttp
 
 ### Coroutines
-- **org.jetbrains.kotlinx:kotlinx-coroutines-core** (1.8.0)
-- **org.jetbrains.kotlinx:kotlinx-coroutines-android** (1.8.0)
+- **org.jetbrains.kotlinx:kotlinx-coroutines-core** (1.10.2)
+- **org.jetbrains.kotlinx:kotlinx-coroutines-android** (1.10.2)
 - Copyright: JetBrains s.r.o.
 - License: Apache License 2.0
 - https://github.com/Kotlin/kotlinx.coroutines
 
 ### Camera & QR Code Scanning
-- **androidx.camera:camera-core** (1.3.0)
-- **androidx.camera:camera-camera2** (1.3.0)
-- **androidx.camera:camera-lifecycle** (1.3.0)
-- **androidx.camera:camera-view** (1.3.0)
+- **androidx.camera:camera-core** (1.5.2)
+- **androidx.camera:camera-camera2** (1.5.2)
+- **androidx.camera:camera-lifecycle** (1.5.2)
+- **androidx.camera:camera-view** (1.5.2)
 - Copyright: The Android Open Source Project
 - License: Apache License 2.0
 - https://developer.android.com/jetpack/androidx/releases/camera
@@ -85,7 +80,7 @@ The following libraries are licensed under the Apache License, Version 2.0:
 ## BSD-2-Clause License (Simplified BSD License)
 
 ### Markdown Parsing
-- **org.commonmark:commonmark** (0.22.0)
+- **org.commonmark:commonmark** (0.27.1)
 - Copyright: Atlassian Pty Ltd
 - License: BSD-2-Clause License
 - https://github.com/commonmark/commonmark-java
@@ -149,11 +144,7 @@ Please refer to the link above for the complete terms.
 All third-party libraries listed above use **permissive open-source licenses** (Apache 2.0 and BSD-2-Clause).
 These licenses are fully compatible with the **MIT License** under which this fork is published.
 
-### Requirements Fulfilled:
-- ✅ **Attribution**: This file provides attribution for all third-party libraries
-- ✅ **License Preservation**: All license texts and copyright notices are maintained
-- ✅ **No Conflicts**: Permissive licenses (Apache 2.0, BSD) do not conflict with MIT
-- ✅ **F-Droid Compatible**: All dependencies are FOSS and approved for F-Droid
+
 ## Card set names
 
 `card-sets/assets/card_sets.csv` maps the file names of the bundled card sets to their display names. The 19 names are taken from the `Game` column of `playlists.csv` of [andygruber/songseeker-hitster-playlists](https://github.com/andygruber/songseeker-hitster-playlists), the name of `hitster-de-aaaa0075.csv` ("Hitster - Original") from the index of the pull request #57 of that project, which also delivered the card set. The playlists are MIT licensed, Copyright (c) 2024 Andreas Gruber. The license text is `card-sets/assets/csv/LICENSE-songseeker-hitster-playlists.txt`, the Open Source Licenses screen shows it.

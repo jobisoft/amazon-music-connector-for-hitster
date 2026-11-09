@@ -23,7 +23,7 @@ object StreamMute {
     private const val PREFS = "stream_mute"
     private const val KEY_WE_MUTED = "we_muted"
 
-    /** The hold of the load phase: a cold start of Amazon Music takes long, but nothing may stay muted for ever. */
+    /** The hold of the load phase: a cold start of Amazon Music takes long, but nothing may stay muted forever. */
     const val HARD_TIMEOUT_MS = MuteHold.LOAD_MS
 
     /** The hold of the end of a song, until the next card has jumped to its start offset. */

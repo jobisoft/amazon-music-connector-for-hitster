@@ -8,4 +8,4 @@ Scan a [Hitster](https://hitstergame.com) card with your Android phone and the s
 | [amazon-web-desktop-connector](amazon-web-desktop-connector) | The Desktop connector. The phone talks to a helper on a computer and a Firefox add-on drives the Amazon Music web player. A first attempt, not developed further for now, and not published in the Firefox Add-on Store. |
 | [card-sets](card-sets) | The card sets (CSV) and their names, used by the Android apps. |
 
-Each folder has its own README with the build steps.
+Each app folder has its own README with the build steps.

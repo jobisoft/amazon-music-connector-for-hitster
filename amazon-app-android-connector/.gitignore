@@ -4,6 +4,7 @@ android/build/
 android/app/build/
 dist/*.apk
 tools/debug.log
+tools/reader_mismatches.csv
 dist/mapping/
 
 __pycache__/

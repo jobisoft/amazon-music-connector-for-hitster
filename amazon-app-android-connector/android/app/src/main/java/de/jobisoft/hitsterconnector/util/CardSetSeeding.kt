@@ -17,9 +17,8 @@ data class SeedDecision(val action: SeedAction, val record: String?)
  *  - local file, the record is missing or differs from the bundled file: overwrite (and record)
  *  - local file, the record equals the bundled file: nothing to do, no write
  *
- * A phone with the old one-time marker has no record: all bundled files are rewritten once. Files
- * with other names (imported by the user) are not bundled and
- * never touched, the rule is applied to the bundled names only.
+ * Files with other names (imported by the user) are not bundled and never touched, the rule is
+ * applied to the bundled names only.
  */
 object CardSetSeeding {
     fun sha256(bytes: ByteArray): String =

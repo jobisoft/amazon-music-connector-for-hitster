@@ -44,7 +44,7 @@ class CSVFileManager @Inject constructor(
                 decision.record?.let { editor.putString(name, it) }
             }
             editor.commit()
-            // the marker of the first version is not used any more
+            // a marker file of an earlier app version is removed
             File(context.filesDir, ".bundled_card_sets_v2").delete()
         } catch (_: Exception) {
             // Nothing is lost, the import in the card config still works.

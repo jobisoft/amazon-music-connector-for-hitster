@@ -29,8 +29,8 @@ echo   - Register the helper app under:
 echo       %REG_KEY%
 echo.
 echo The helper app listens on your local network, so that the Android app can
-echo reach it. Requests need a secret token, which is shown on the add-on's
-echo options page.
+echo reach it. Requests need an allowed device or the secret token, see the
+echo options page of the add-on.
 echo.
 choice /c yn /n /m "Proceed with installation? [y/n] "
 if errorlevel 2 (

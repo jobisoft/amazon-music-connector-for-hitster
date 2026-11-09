@@ -24,7 +24,7 @@ else
   KIND="debug"; TASK=":app:assembleDebug"; SRC="android/app/build/outputs/apk/debug/app-debug.apk"
 fi
 echo "JAVA_HOME=$JAVA_HOME ANDROID_HOME=$ANDROID_HOME, version 1.0.0-$STAMP-$KIND (code $VERSION_CODE)"
-(cd android && sh ./gradlew "$TASK" ${DEBUG_SINK:+-PdebugSink="$DEBUG_SINK"} \
+(cd android && sh ./gradlew "$TASK" \
   -PbuildStamp="$STAMP" -PbuildVersionCode="$VERSION_CODE")
 
 mkdir -p dist

@@ -17,7 +17,7 @@ import java.util.Locale
  */
 object ExportShare {
     /** Where to send it, one short line for the screen. */
-    const val WHERE_TO_SEND = "Send the file to the author: GitHub project jobisoft/amazon-music-connector-for-hitster (issue or mail)."
+    const val WHERE_TO_SEND = "Send the file to the author: GitHub project jobisoft/amazon-music-connector-for-hitster (open an issue and attach the file)."
 
     /** Builds the file and opens the share sheet. False if there is nothing to export or sharing fails. */
     fun share(context: Context, corrections: List<CardOverride>): Boolean {

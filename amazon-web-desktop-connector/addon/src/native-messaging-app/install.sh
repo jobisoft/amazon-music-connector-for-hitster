@@ -57,8 +57,8 @@ for HOSTS_DIR in "${HOSTS_DIRS[@]}"; do
 done
 echo
 echo "The helper app listens on your local network, so that the Android app can"
-echo "reach it. Requests need a secret token, which is shown on the add-on's"
-echo "options page."
+echo "reach it. Requests need an allowed device or the secret token, see the"
+echo "options page of the add-on."
 echo
 
 read -p "Proceed with installation? [y/n] " -n 1 -r

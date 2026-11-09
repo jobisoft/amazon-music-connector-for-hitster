@@ -23,7 +23,7 @@ Load the add-on, then open its options page. While the helper app is missing, th
 - Windows: unpack the archive and run `install.bat`
 - The helper app needs Python 3.
 
-Restart Firefox afterwards. To work on the helper itself, run `bash install.sh --dev` from the source folder. The manifest then points to `src/native-messaging-app/amazon_music_connector_host.py` instead of a copy, so a change to it takes effect when the add-on is reloaded (`POST /reload` of the debug interface). The options page then shows the status of the helper app, the address and the token for the Android app, and the most recent requests.
+Restart Firefox afterwards. The options page then shows the status of the helper app, the address and the token for the Android app, and the most recent requests. To work on the helper itself, run `bash install.sh --dev` from the source folder. The manifest then points to `src/native-messaging-app/amazon_music_connector_host.py` instead of a copy, so a change to it takes effect when the add-on is reloaded (`POST /reload` of the debug interface).
 
 ### Amazon Music tab
 
@@ -52,10 +52,10 @@ Requests need the header `Authorization: Bearer <token>`, unless the open access
 | `GET /ping` (open) | `{"app": "amazon-music-connector-for-hitster", "version": "...", "name": "<computer>", "id": "<installation>", "open": false}` |
 | `POST /pair` with `{"name": "<device>"}` (open) | Asks to allow the device. The user decides on the options page. `{"ok": true, "id": "..."}` |
 | `GET /pair/<id>` (open) | `{"state": "pending" \| "approved" \| "denied" \| "expired", "token": "..."}`, the token comes with `approved` |
-| `GET /app`, `GET /app.apk` (open) | The page and the file of the bundled Android app |
+| `GET /`, `GET /app`, `GET /app/<file>.apk`, `GET /app.apk` (open) | The page and the file of the bundled Android app |
 | `GET /status` | `{"ok": true, "addon": true}` |
-| `POST /play` with `{"title": "...", "artist": "...", "year": 1981, "card": "de/00123"}` | `{"ok": true, "message": "..."}` or `{"ok": false, "error": "..."}` |
-| `POST /control` with `{"action": "back10" \| "forward10" \| "restart" \| "stop" \| "seek" \| "state"}` | `{"ok": true, "message": "Done."}` or `{"ok": false, "error": "..."}` |
+| `POST /play` with `{"title": "...", "artist": "...", "year": 1981, "card": "de/00123", "start": 20}` (`year`, `card` and `start` in seconds are optional) | `{"ok": true, "message": "..."}` or `{"ok": false, "error": "..."}` |
+| `POST /control` with `{"action": "back10" \| "forward10" \| "restart" \| "stop" \| "seek" \| "state", "position": 12.3}` (`position` for `seek`) | `{"ok": true, "position": 12.3, "duration": 201.0, "playing": true}` or `{"ok": false, "error": "..."}` |
 
 A song starts at 20 seconds (at a quarter of its length when it is shorter than 50 seconds). `restart` jumps there again and plays, `stop` pauses. While an Amazon Music tab is open the add-on also keeps the account setting "Autoplay" (similar songs after the music ends) switched off: when the page has loaded, and before a play request if the last check is older than ten minutes.
 
@@ -103,7 +103,7 @@ The DOM request takes these fields, all optional:
 
 `POST /act` clicks an element, types text into it, or presses a key on it. The element is found with the same selector syntax as for the DOM dump, and `index` picks one of several matches. The events are synthetic, so the page may treat them differently from a real click. That is exactly what this interface is for.
 
-`POST /reload` reloads the add-on with `browser.runtime.reload()`. Firefox reads the files again from the place the temporary add-on was loaded from (the folder with `manifest.json`, or the `.xpi`). So after a change you rebuild the XPI if needed and reload, without touching `about:debugging`. The helper restarts together with the add-on, but it is the copy installed by `install.sh`, which only changes when you run the installer again.
+`POST /reload` reloads the add-on with `browser.runtime.reload()`. Firefox reads the files again from the place the temporary add-on was loaded from (the folder with `manifest.json`, or the `.xpi`). So after a change you rebuild the XPI if needed and reload, without touching `about:debugging`. The helper restarts together with the add-on. With a normal install it is the copy made by `install.sh`, which only changes when you run the installer again. With `install.sh --dev` it is the file in the source folder.
 
 `POST /navigate` loads a page of Amazon Music in the tab and answers when it has finished loading. Only `https://music.amazon.*` addresses are accepted.
 
@@ -127,7 +127,7 @@ or, without npm:
 python3 build.py
 ```
 
-This syncs the version from `package.json` into `src/manifest.json` and creates `dist/amazon-music-connector-for-hitster_<version>.xpi`.
+This syncs the version from `package.json` into `src/manifest.json` and creates `dist/amazon-music-connector-for-hitster_<version>.xpi` (the dots of the version become underscores).
 
 The script bundles the Android app if it finds a build in `../android/app/build/outputs/apk/` (release first, then debug). To use another file, run `python3 build.py --apk path/to/app.apk`. Without any APK the add-on builds fine, and the options page says that no app is inside. A debug APK is signed with a debug key, which is fine for installing on your own phone.
 

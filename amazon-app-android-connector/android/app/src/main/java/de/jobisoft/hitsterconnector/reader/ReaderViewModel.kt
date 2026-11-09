@@ -49,10 +49,10 @@ data class ReaderUiState(
 )
 
 /**
- * Reader mode: scan a card, see year, title and artist from our CSV at once. If something is wrong the user
+ * Reader mode: scan a card, see artist, year and title from our CSV at once. If something is wrong the user
  * reports it with "Report as wrong" (the same component as in the game, it goes through the [ReaderStore]:
- * `reader_results.csv`, the correction and the debug log), if not the next card is scanned. Nothing plays,
- * no Amazon Music is involved.
+ * `reader_results.csv`, the correction and the debug log), if not the next card is scanned. A scan plays
+ * nothing, only the button "Send to Amazon Music app" plays the shown card.
  */
 @HiltViewModel
 class ReaderViewModel @Inject constructor(

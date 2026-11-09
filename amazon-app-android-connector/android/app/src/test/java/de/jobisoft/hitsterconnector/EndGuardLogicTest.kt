@@ -58,7 +58,7 @@ class EndGuardLogicTest {
         val guard = GuardModel()
         guard.arm()
         guard.onTick(true, 180f, 179.5f, window) // the end, muted
-        assertTrue("still watching: this was the bug of build 1242", guard.watching)
+        assertTrue("still watching after the song has ended", guard.watching)
         // the song is over, the ticker looks on and nothing changes
         repeat(100) { guard.onTick(false, 180f, 180f, window) }
         assertTrue(guard.watching)

@@ -173,7 +173,7 @@ private fun ConnectionCard(
                         Text("Search again")
                     }
                     OutlinedButton(onClick = onManual, modifier = Modifier.fillMaxWidth()) {
-                        Text("Enter manually")
+                        Text("Manual setup")
                     }
                 }
             }

@@ -84,7 +84,7 @@ class QuizViewModel @Inject constructor(
 
     /**
      * Loads the selected sets and plays the first card. Does nothing if this quiz is running
-     * already. The token [ALL] stands for every card set on the phone.
+     * already. The value [ALL] stands for every card set on the phone.
      */
     fun start(requested: List<String>) {
         if (started && requested == requestedFiles) return

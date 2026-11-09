@@ -160,7 +160,7 @@ fun CardConfigScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                     Text(
-                        text = "Add all CSV-Files from songseeker-hitster-playlists repository",
+                        text = "Add all CSV files from songseeker-hitster-playlists repository",
                         textAlign = TextAlign.Center,
                         maxLines = 3
                     )

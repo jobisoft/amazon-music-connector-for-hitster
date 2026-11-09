@@ -45,7 +45,7 @@
     "message": "Die Hilfsanwendung reicht die Anfrage an dieses Add-on weiter, das den Song in deinem Amazon-Music-Tab sucht und abspielt."
   },
   "setupSecurityNotice": {
-    "message": "Die Hilfsanwendung nimmt Anfragen aus deinem lokalen Netzwerk an, aber nur mit dem geheimen Token, der nach der Einrichtung auf dieser Seite steht. Gib den Token nicht weiter und nutze die Einrichtung nur in Netzwerken, denen du vertraust."
+    "message": "Die Hilfsanwendung nimmt Anfragen aus deinem lokalen Netzwerk an, aber nur von Geräten, die du erlaubt hast oder die den geheimen Token von dieser Seite haben, es sei denn, du schaltest den offenen Zugang ein. Gib den Token nicht weiter und nutze die Einrichtung nur in Netzwerken, denen du vertraust."
   },
   "setupDownloadTitle": {
     "message": "Hilfsanwendung herunterladen"
@@ -54,7 +54,7 @@
     "message": "Herunterladen"
   },
   "setupInstructions": {
-    "message": "Entpacke das Archiv und starte den Installer:"
+    "message": "Entpacke das heruntergeladene Archiv und starte den Installer:"
   },
   "setupInstallWin": {
     "message": "Doppelklick auf"
@@ -105,7 +105,7 @@
     "message": "Speichern"
   },
   "confirmRegenerate": {
-    "message": "Neuen Token erzeugen? Die Android-App muss danach mit dem neuen Token aktualisiert werden."
+    "message": "Neuen Token erzeugen? Bisher erlaubte Handys müssen erneut um Erlaubnis fragen."
   },
   "helperHeading": {
     "message": "Hilfsanwendung"
@@ -261,7 +261,7 @@
     "message": "Unbekannt"
   },
   "qrNetworkHint": {
-    "message": "Wenn das Handy den Link nicht öffnen kann, prüfe zuerst, ob es im selben WLAN wie dieser Computer ist. Mobile Daten und Gastnetze funktionieren nicht. Ist das in Ordnung, blockiert vielleicht eine Firewall auf diesem Computer den Port 8765."
+    "message": "Wenn das Handy den Link nicht öffnen kann, prüfe zuerst, ob es im selben WLAN wie dieser Computer ist. Mobile Daten und Gastnetze funktionieren nicht. Ist das in Ordnung, blockiert vielleicht eine Firewall auf diesem Computer den Port der Hilfsanwendung (standardmäßig 8765)."
   },
   "pairHeading": {
     "message": "Ein Handy möchte sich verbinden"

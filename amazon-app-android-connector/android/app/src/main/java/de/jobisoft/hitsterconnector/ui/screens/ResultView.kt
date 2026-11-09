@@ -411,7 +411,7 @@ internal fun ErrorBoxes(message: String) {
     }
 }
 
-/** A coloured box with the title and a check mark (green) or a cross (red) behind it. */
+/** A coloured box. Green: the title and, below it, the card set. Red: the title with a cross behind it. */
 @Composable
 private fun StatusCard(title: String, isError: Boolean, subtitle: String? = null) {
     val contentColor = if (isError) {

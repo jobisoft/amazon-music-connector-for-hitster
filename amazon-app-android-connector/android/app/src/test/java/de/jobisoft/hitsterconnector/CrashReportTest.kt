@@ -12,10 +12,10 @@ class CrashReportTest {
     fun theReportHasTimeAppDeviceThreadAndTheStackTraceWithItsCauses() {
         val cause = IllegalStateException("the root cause")
         val text = CrashReport.format(
-            "2026-11-09 20:00:00", "0.1.0-test-debug", "samsung SM-A326B, Android 13 (SDK 33)", "main",
+            "2026-11-09 20:00:00", "1.0.0-test-debug", "samsung SM-A326B, Android 13 (SDK 33)", "main",
             RuntimeException("outer", cause)
         )
-        assertTrue(text.startsWith("Crash at 2026-11-09 20:00:00\nApp: 0.1.0-test-debug\nDevice: samsung SM-A326B"))
+        assertTrue(text.startsWith("Crash at 2026-11-09 20:00:00\nApp: 1.0.0-test-debug\nDevice: samsung SM-A326B"))
         assertTrue(text.contains("Thread: main"))
         assertTrue(text.contains("java.lang.RuntimeException: outer"))
         assertTrue("the cause is in", text.contains("Caused by: java.lang.IllegalStateException: the root cause"))

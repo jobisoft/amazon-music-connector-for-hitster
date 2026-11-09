@@ -27,7 +27,7 @@ sealed class Screen(val route: String) {
     object Scanner : Screen("scanner")
     object QuizSets : Screen("quiz_sets")
     object Quiz : Screen("quiz/{files}") {
-        /** The files comma-joined and Uri-encoded, or the token "all". */
+        /** The files comma-joined and Uri-encoded, or the value "all". */
         fun createRoute(files: List<String>) = "quiz/" + Uri.encode(files.joinToString(","))
     }
     object Help : Screen("help")
@@ -100,7 +100,7 @@ fun AppNavigation(
             )
         }
 
-        readerRoute(navController) // debug build only, the production build has nothing here
+        readerRoute(navController) // the reader route, in every build
 
         composable(Screen.Help.route) {
             HelpScreen(
