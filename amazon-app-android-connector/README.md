@@ -149,15 +149,6 @@ Samsung SM-A326B, Android 13, Amazon Music 26.39.1:
 - A `MediaBrowser` connection to Amazon's service is refused.
 - Search for "Rehab" by Amy Winehouse returned the remix "Rehab (Pharoahe Monch Remix) [Explicit]" first.
 
-## Not verified
-
-- The production app with R8 was never run on a phone.
-- Whether the intro is silent, the mute sets in and is undone, and how long each step takes (`leakedIntroS` in the `start` event).
-- Whether the last second stays silent, whether Amazon's auto-advance is audible before the detector pauses it (`leakedMs`), and whether the guard survives a long song with the screen off.
-- Whether the search query with `[Single Version, <year>]` and the retry avoid remixes.
-- The silent wake by media button, the bring-back of the app on Android 13, the layout of the overlay with the keyboard on a 360 dp phone and the share sheet of the export.
-- The blur of the reveal box works from Android 12 only. Below that the real text is never composed while hidden.
-- Amazon may expose no controllable session for some streams or refuse `seekTo`. Then the start offset, the buttons and the slider do not work.
-- Android 14 and later may refuse to start Amazon's activity from the background.
+## Tests
 
 Unit tests (`./gradlew :app:testDebugUnitTest`) cover the logic without a phone: stop confirmation, start jump, end decisions, switch detector, play and restart decisions, control buttons, search query, version check, quiz deck, corrections, reader results, card set names and seeding.

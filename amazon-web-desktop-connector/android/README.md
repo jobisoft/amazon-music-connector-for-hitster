@@ -1,6 +1,6 @@
 # Hitster Amazon Desktop Connector (Android app)
 
-An Android app that scans the QR codes of [Hitster](https://hitstergame.com) cards and plays the songs on **Amazon Music** in the Firefox browser of your computer. It is the phone half of a pair. The other half is the Firefox add-on [amazon-music-connector-for-hitster-addon](../addon).
+An Android app that scans the QR codes of [Hitster](https://hitstergame.com) cards and plays the songs on **Amazon Music** in the Firefox browser of your computer. It is the phone half of a pair. The other half is the [Firefox add-on](../addon).
 
 The app does not play any music itself. Amazon offers no public search API for private accounts, so the add-on searches in your open Amazon Music tab, as if you had searched for the song yourself.
 
@@ -25,7 +25,7 @@ Removed are the SubSonic client and the audio player. New are the connector clie
 ## Setup
 
 1. Install the Firefox add-on and its helper app on your computer. The options page of the add-on explains the steps and shows a QR code for this app.
-2. Open the app in the same Wi-Fi. It looks for the helper app by itself: it asks the addresses of its own /24 network on port 8765. Several computers are offered as a list.
+2. Open the app in the same Wi-Fi. It looks for the helper app by itself: it sends a UDP broadcast to port 8765 and every helper answers. Several computers are offered as a list.
 3. The options page of the add-on opens on the computer and asks whether the phone may connect. Press **Allow**. This is needed once. The app keeps the token, and it recognises the computer again by an id when its address changes.
 4. Open Amazon Music in Firefox on the computer and log in.
 5. Tap **Scan QR Code**.
@@ -53,10 +53,6 @@ Open the project in Android Studio, or run:
 ```
 
 The build needs the Android SDK (compileSdk 36) and a JDK 17 or newer. Kotlin warnings are treated as errors, as in the upstream project.
-
-## Status
-
-The code is adapted from SubSonicSter but has **not been compiled or run yet**. Expect a round of build fixes on the first Gradle run.
 
 ## License
 

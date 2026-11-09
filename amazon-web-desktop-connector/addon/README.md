@@ -1,31 +1,23 @@
 # Amazon Music Connector for Hitster
 
-A Firefox add-on that plays the songs of scanned [Hitster](https://hitstergame.com) cards in an open Amazon Music tab. It is the browser half of a pair. The other half is the Android app in [amazon-music-connector-for-hitster-android](../android).
+A Firefox add-on that plays the songs of scanned [Hitster](https://hitstergame.com) cards in an open Amazon Music tab. It is the browser half of a pair. The other half is the Android app [Hitster Amazon Desktop Connector](../android).
 
 ## How it works
 
 1. The Android app scans the QR code of a card and looks up the title and the artist of the song.
 2. The app sends both to a small **native helper app** on your computer. The helper listens on your local network.
 3. The helper passes the request to this add-on through **native messaging**.
-4. The add-on searches and plays the song in your open Amazon Music tab (content script, planned for the next step).
+4. The add-on searches and plays the song in your open Amazon Music tab (content script).
 
 A Firefox add-on cannot open a network port, which is why the helper app is needed. It is a single process: Firefox starts it, and it ends when Firefox ends.
 
 ## Status
 
-| Part | State |
-| --- | --- |
-| Native helper app with HTTP API | done |
-| Options page: setup, Amazon Music tab, QR code for the Android app, helper status | done |
-| Android app bundled in the add-on and served by the helper | done, needs a built APK |
-| Debug interface: request log, DOM dump of the Amazon Music tab | done |
-| Content script that searches and plays songs | planned |
-
-Until the content script can play, every play request is answered with "not implemented yet". The request still shows up in the list on the options page, so the whole chain from phone to add-on can be tested.
+This add-on is a first attempt and is not developed further for now. It is not published in the Firefox Add-on Store and works only as a temporary debug install (`about:debugging`, "Load Temporary Add-on", then select the `.xpi` or its `manifest.json`).
 
 ## Setup
 
-Install the add-on, then open its options page. While the helper app is missing, the page offers it as a download and shows the install steps for your system. In short:
+Load the add-on, then open its options page. While the helper app is missing, the page offers it as a download and shows the install steps for your system. In short:
 
 - Linux and macOS: unpack the archive and run `bash install.sh`
 - Windows: unpack the archive and run `install.bat`
@@ -53,14 +45,17 @@ Firefox installed as a snap or flatpak runs in a sandbox. The installer also reg
 
 ## HTTP API of the helper app
 
-All requests except `GET /ping` need the header `Authorization: Bearer <token>`.
+Requests need the header `Authorization: Bearer <token>`, unless the open access is switched on on the options page (for a network you trust). The requests marked "open" never need it.
 
 | Request | Answer |
 | --- | --- |
-| `GET /ping` | `{"app": "amazon-music-connector-for-hitster", "version": "..."}` |
+| `GET /ping` (open) | `{"app": "amazon-music-connector-for-hitster", "version": "...", "name": "<computer>", "id": "<installation>", "open": false}` |
+| `POST /pair` with `{"name": "<device>"}` (open) | Asks to allow the device. The user decides on the options page. `{"ok": true, "id": "..."}` |
+| `GET /pair/<id>` (open) | `{"state": "pending" \| "approved" \| "denied" \| "expired", "token": "..."}`, the token comes with `approved` |
+| `GET /app`, `GET /app.apk` (open) | The page and the file of the bundled Android app |
 | `GET /status` | `{"ok": true, "addon": true}` |
 | `POST /play` with `{"title": "...", "artist": "...", "year": 1981, "card": "de/00123"}` | `{"ok": true, "message": "..."}` or `{"ok": false, "error": "..."}` |
-| `POST /control` with `{"action": "back10" \| "forward10" \| "restart" \| "stop"}` | `{"ok": true, "message": "Done."}` or `{"ok": false, "error": "..."}` |
+| `POST /control` with `{"action": "back10" \| "forward10" \| "restart" \| "stop" \| "seek" \| "state"}` | `{"ok": true, "message": "Done."}` or `{"ok": false, "error": "..."}` |
 
 A song starts at 20 seconds (at a quarter of its length when it is shorter than 50 seconds). `restart` jumps there again and plays, `stop` pauses. While an Amazon Music tab is open the add-on also keeps the account setting "Autoplay" (similar songs after the music ends) switched off: when the page has loaded, and before a play request if the last check is older than ten minutes.
 
