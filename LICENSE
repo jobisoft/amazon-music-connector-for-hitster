@@ -1,0 +1,15 @@
+This repository contains parts under different licenses. Each part has its own license file.
+
+Android apps (amazon-app-android-connector and amazon-web-desktop-connector/android)
+  MIT License, see android/LICENSE.mit in each of the two folders. The apps are based on
+  SubSonicSter by langhaarschneider, whose original notice is android/LICENSE in each folder.
+
+Firefox add-on and helper app (amazon-web-desktop-connector/addon)
+  Mozilla Public License 2.0, see amazon-web-desktop-connector/addon/LICENSE.
+
+Card data (card-sets)
+  MIT License, Copyright (c) 2024 Andreas Gruber, taken from
+  https://github.com/andygruber/songseeker-hitster-playlists, see
+  card-sets/assets/csv/LICENSE-songseeker-hitster-playlists.txt.
+
+Third-party libraries are listed in the LICENSES_THIRD_PARTY.md of each Android app.

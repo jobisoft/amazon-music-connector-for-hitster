@@ -1,6 +1,6 @@
 # Amazon Music Connector for Hitster
 
-A Firefox add-on that plays the songs of scanned [Hitster](https://hitstergame.com) cards in an open Amazon Music tab. It is the browser half of a pair. The other half is the Android app [Hitster Amazon Desktop Connector](../android).
+A Firefox add-on that plays the songs of scanned [Hitster](https://hitstergame.com) cards in an open Amazon Music tab. It is the browser half of a pair. The other half is the Android app [Amazon Music Desktop Connector for Hitster](../android).
 
 ## How it works
 

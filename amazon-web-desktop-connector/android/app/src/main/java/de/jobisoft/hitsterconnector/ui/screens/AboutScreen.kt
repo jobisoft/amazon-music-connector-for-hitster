@@ -53,7 +53,7 @@ fun AboutScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Hitster Amazon Desktop Connector",
+                        text = "Amazon Music Desktop Connector for Hitster",
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold
                     )

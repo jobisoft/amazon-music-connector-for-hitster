@@ -11,7 +11,7 @@ From the folder above, `./build.sh` builds the debug APK and `./build.sh --prod`
 ./gradlew assembleRelease
 ```
 
-The build needs the Android SDK (compileSdk 36), JDK 21 and Gradle 8.13 (the wrapper). Kotlin, Java and lint warnings are errors.
+Built with the Android SDK (compileSdk 36), JDK 21 and Gradle 8.13 (the wrapper). Kotlin, Java and lint warnings are errors.
 
 ```
 ./gradlew :app:testDebugUnitTest :app:lintVitalRelease

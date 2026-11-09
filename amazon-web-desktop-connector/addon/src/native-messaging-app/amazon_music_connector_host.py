@@ -400,7 +400,7 @@ def apk_info():
 
 PAGE_EN = {
     "lang": "en",
-    "title": "Hitster Amazon Desktop Connector (Android)",
+    "title": "Amazon Music Desktop Connector for Hitster (Android)",
     "intro": "This app scans Hitster cards and plays the songs on Amazon Music in the browser of your computer.",
     "download": "Download the app",
     "missing": "The add-on has no Android app bundled yet.",
@@ -412,7 +412,7 @@ PAGE_EN = {
 }
 PAGE_DE = {
     "lang": "de",
-    "title": "Hitster Amazon Desktop Connector (Android)",
+    "title": "Amazon Music Desktop Connector for Hitster (Android)",
     "intro": "Die App scannt Hitster-Karten und spielt die Songs über Amazon Music im Browser deines Computers ab.",
     "download": "App herunterladen",
     "missing": "Im Add-on ist noch keine Android-App enthalten.",

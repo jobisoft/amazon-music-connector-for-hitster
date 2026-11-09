@@ -4,7 +4,7 @@
 #   ./build.sh            build both
 #   ./build.sh --addon    only the add-on (uses the APK from the last Android build)
 #
-# Needs a JDK 17 to 24 (JAVA_HOME, or one found in /usr/lib/jvm) and the
+# Built with JDK 21 (JAVA_HOME, or one found in /usr/lib/jvm) and the
 # Android SDK (ANDROID_HOME, or ~/Android/Sdk). The debug APK is signed with the
 # debug key of Android Studio, which is fine for installing on your own phone.
 
@@ -12,21 +12,19 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 if [[ "${1:-}" != "--addon" ]]; then
-  # Gradle 8.13 runs on JDK 17 to 24. The JDK 25 inside current Android Studio is too new.
-  java_major() { "$1/bin/java" -version 2>&1 | sed -n 's/.*version "\([0-9]*\).*/\1/p' | head -1; }
-  usable() { [[ -x "$1/bin/java" ]] && (( $(java_major "$1") >= 17 && $(java_major "$1") <= 24 )); }
+  usable() { [[ -x "$1/bin/java" ]]; }
   if [[ -n "${JAVA_HOME:-}" ]] && ! usable "$JAVA_HOME"; then
-    echo "JAVA_HOME=$JAVA_HOME is not a JDK 17 to 24, looking for another one." >&2
+    echo "JAVA_HOME=$JAVA_HOME has no bin/java, looking for another one." >&2
     unset JAVA_HOME
   fi
   if [[ -z "${JAVA_HOME:-}" ]]; then
-    for candidate in /usr/lib/jvm/java-21-openjdk-* /usr/lib/jvm/java-17-openjdk-* /usr/lib/jvm/java-2[0-4]-* \
+    for candidate in /usr/lib/jvm/java-21-* \
         /snap/android-studio/current/jbr /opt/android-studio/jbr "$HOME/android-studio/jbr"; do
       if usable "$candidate"; then export JAVA_HOME="$candidate"; break; fi
     done
   fi
   if [[ -z "${JAVA_HOME:-}" ]]; then
-    echo "No JDK 17 to 24 found. Install one, for example: sudo apt install openjdk-21-jdk-headless" >&2
+    echo "No JDK found. We build with JDK 21, install one, for example: sudo apt install openjdk-21-jdk-headless" >&2
     exit 1
   fi
   export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"

@@ -53,7 +53,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Hitster Amazon Desktop Connector",
+                text = "Amazon Music Desktop Connector for Hitster",
                 style = MaterialTheme.typography.displaySmall,
                 textAlign = TextAlign.Center
             )

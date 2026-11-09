@@ -5,7 +5,7 @@
 #   ./build.sh --prod   production build (R8, no debug channel), dist/Amazon-Music-Connector-for-Hitster-1.0.0-<stamp>-prod.apk
 #
 # The debug APK in dist/ stays where it is when you build the production one, and the other way round.
-# Needs JDK 21 and the Android SDK, the paths below are the ones of this machine.
+# Built with JDK 21 and the Android SDK, the paths below are the ones of this machine.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 

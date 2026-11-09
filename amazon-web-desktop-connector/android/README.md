@@ -1,4 +1,4 @@
-# Hitster Amazon Desktop Connector (Android app)
+# Amazon Music Desktop Connector for Hitster (Android app)
 
 An Android app that scans the QR codes of [Hitster](https://hitstergame.com) cards and plays the songs on **Amazon Music** in the Firefox browser of your computer. It is the phone half of a pair. The other half is the [Firefox add-on](../addon).
 
@@ -52,7 +52,7 @@ Open the project in Android Studio, or run:
 ./gradlew assembleDebug
 ```
 
-The build needs the Android SDK (compileSdk 36) and a JDK 17 to 24 (not 25), see `../build.sh`. Kotlin warnings are treated as errors, as in the upstream project.
+Built with the Android SDK (compileSdk 36) and JDK 21. Kotlin warnings are treated as errors, as in the upstream project.
 
 ## License
 
