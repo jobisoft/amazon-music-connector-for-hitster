@@ -1,6 +1,6 @@
 # Amazon Music Connector for Hitster
 
-Play the songs of [Hitster](https://hitstergame.com) cards on Amazon Music. You scan a card with your phone, and the song plays in the browser on your computer.
+Play the songs of [Hitster](https://hitstergame.com) cards on Amazon Music. You scan a card with your Android phone, and the song plays in the browser on your computer.
 
 Amazon offers no public search API for private accounts, so the Firefox add-on searches in the Amazon Music web player for you, as if you had typed the search yourself.
 
