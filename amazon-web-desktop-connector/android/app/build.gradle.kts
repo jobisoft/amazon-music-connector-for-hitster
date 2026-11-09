@@ -43,7 +43,7 @@ android {
         // version code that only grows, so that Android accepts it as an update.
         // Without it (Android Studio) the app is a "dev" build.
         versionCode = (project.findProperty("buildVersionCode") as String?)?.toInt() ?: 1
-        versionName = "1.0.0-" + ((project.findProperty("buildStamp") as String?) ?: "dev")
+        versionName = "1.0.1-" + ((project.findProperty("buildStamp") as String?) ?: "dev")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

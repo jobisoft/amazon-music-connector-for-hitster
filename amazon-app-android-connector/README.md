@@ -87,7 +87,7 @@ The loaded song must match the card title (case, accents and "(Remastered)" are 
 
 ## Debug and production apps
 
-`./build.sh` builds the debug app, `./build.sh --prod` the production app. Each file name has the version `1.0.0-<yyyymmdd>.<hhmm>-debug` or `-prod`.
+`./build.sh` builds the debug app, `./build.sh --prod` the production app. Each file name has the version `1.0.1-<yyyymmdd>.<hhmm>-debug` or `-prod`.
 
 | | debug | production |
 | --- | --- | --- |

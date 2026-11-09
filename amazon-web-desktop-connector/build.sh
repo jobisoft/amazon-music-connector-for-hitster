@@ -32,10 +32,10 @@ if [[ "${1:-}" != "--addon" ]]; then
     echo "sdk.dir=$ANDROID_HOME" > android/local.properties
   fi
   echo "JAVA_HOME=${JAVA_HOME:-<not set>}  ANDROID_HOME=$ANDROID_HOME"
-  # Every build gets its own version: 1.0.0-<date>.<time>, and a growing version code
+  # Every build gets its own version: 1.0.1-<date>.<time>, and a growing version code
   STAMP="$(date +%Y%m%d.%H%M)"
   VERSION_CODE="$(( $(date +%s) / 60 ))"
-  echo "Android app version: 1.0.0-$STAMP (code $VERSION_CODE)"
+  echo "Android app version: 1.0.1-$STAMP (code $VERSION_CODE)"
   (cd android && sh ./gradlew :app:assembleDebug -PbuildStamp="$STAMP" -PbuildVersionCode="$VERSION_CODE")
 fi
 

@@ -33,7 +33,7 @@ async function loadBuildInfo() {
   }
 }
 
-/** "1.0.0 (build 2026-11-08 04:12:05)", or just the version for an unpacked add-on. */
+/** "1.0.1 (build 2026-11-08 04:12:05)", or just the version for an unpacked add-on. */
 function versionText() {
   const version = browser.runtime.getManifest().version;
   return buildInfo ? `${version} (build ${buildInfo.builtAt})` : `${version} (not built, loaded from the source folder)`;

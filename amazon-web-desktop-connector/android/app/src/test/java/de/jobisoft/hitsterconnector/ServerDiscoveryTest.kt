@@ -8,7 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ServerDiscoveryTest {
-    private val answer = """{"app":"amazon-music-connector-for-hitster","version":"1.0.0","name":"laptop","id":"abc","open":true,"port":8800}"""
+    private val answer = """{"app":"amazon-music-connector-for-hitster","version":"1.0.1","name":"laptop","id":"abc","open":true,"port":8800}"""
 
     @Test
     fun answerGivesTheServerAtTheSenderAddress() {
@@ -16,7 +16,7 @@ class ServerDiscoveryTest {
         assertEquals("http://192.168.1.20:8800", server.url)
         assertEquals("laptop", server.name)
         assertEquals("abc", server.id)
-        assertEquals("1.0.0", server.version)
+        assertEquals("1.0.1", server.version)
         assertTrue(server.open)
     }
 

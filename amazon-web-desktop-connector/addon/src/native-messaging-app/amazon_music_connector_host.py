@@ -101,7 +101,7 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-HOST_VERSION = "1.0.0"
+HOST_VERSION = "1.0.1"
 APP_ID = "amazon-music-connector-for-hitster"
 DEFAULT_PORT = 8765
 DEFAULT_DISCOVERY_PORT = 8765  # UDP, a different namespace than the HTTP port
