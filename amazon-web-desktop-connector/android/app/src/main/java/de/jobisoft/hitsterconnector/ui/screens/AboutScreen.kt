@@ -74,7 +74,7 @@ fun AboutScreen(
 
                 OutlinedButton(
                     onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, "https://github.com/jobisoft/amazon-music-connector-for-hitster-android".toUri())
+                        val intent = Intent(Intent.ACTION_VIEW, "https://github.com/jobisoft/amazon-music-connector-for-hitster".toUri())
                         context.startActivity(intent)
                     },
                     modifier = Modifier.fillMaxWidth()
