@@ -39,10 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -149,7 +147,7 @@ fun ReaderScreen(
             }
             BackButton(
                 onClick = {
-                    viewModel.leave() // stops a song sent from here, ends the end guard, unmutes
+                    viewModel.leave() // stops a song sent from here and ends the end guard
                     onNavigateBack()
                 },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -200,7 +198,7 @@ private fun CardResult(card: ReaderCard, ui: ReaderUiState, onSend: () -> Unit) 
         }
         // the reader reads cards to check them: the values are shown at once, so the button is there at once, no reveal step
         ReportWrongSection(
-            ReportCard(card.serial, card.setFile, card.number, card.year, card.title, card.artist),
+            ReportCard(card.serial, card.setFile, card.number, card.year, card.title, card.artist, card.amazonId),
             revealed = true,
             source = ReportSource.READER
         )
@@ -214,7 +212,7 @@ private fun CardResult(card: ReaderCard, ui: ReaderUiState, onSend: () -> Unit) 
         ui.amazonProblem?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         }
-        val line = SendToAmazon.statusLine(ui.send, ui.songEnded, ui.versionNote)
+        val line = SendToAmazon.statusLine(ui.send, ui.songEnded, ui.versionNote, ui.playStatus)
         if (line.isNotEmpty()) Text(line, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp))
         if (ui.send == SendStatus.FAILED && ui.sendError != null) {
             Spacer(modifier = Modifier.height(8.dp))

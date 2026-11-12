@@ -94,7 +94,7 @@ fun AboutScreen(
 
                 Section(
                     title = "Card data",
-                    content = "The card data comes from the SongSeeker Hitster playlists by Andreas Gruber (MIT License, Copyright 2024 Andreas Gruber)."
+                    content = "The card data is based in part on the SongSeeker Hitster playlists by Andreas Gruber (MIT License, Copyright 2024 Andreas Gruber)."
                 )
 
                 OutlinedButton(

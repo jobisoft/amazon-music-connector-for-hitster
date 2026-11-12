@@ -45,9 +45,18 @@ object ReportRefresh {
     /** Is the report for the card that is shown? */
     fun isFor(setFile: String, card: Int, row: ResultRow): Boolean = row.setFile == setFile && row.card == card
 
+    /** The values of a card after a report. [amazonId] is null for no id. */
+    data class Values(val year: Int?, val title: String, val artist: String, val amazonId: String?)
+
     /** The values after the report: what the user entered (a value the report does not have stays as it was). */
-    fun values(year: Int?, title: String, artist: String, row: ResultRow): Triple<Int?, String, String> =
-        Triple(row.cardYear ?: year, row.cardTitle ?: title, row.cardArtist ?: artist)
+    fun values(year: Int?, title: String, artist: String, amazonId: String?, row: ResultRow): Values = Values(
+        row.cardYear ?: year, row.cardTitle ?: title, row.cardArtist ?: artist,
+        when {
+            row.cardAmazonId == null -> amazonId
+            row.cardAmazonId.isBlank() -> null
+            else -> row.cardAmazonId
+        }
+    )
 }
 
 /** The quiz and the overlay: the next card waits while a report is being written. */

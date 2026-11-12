@@ -1,7 +1,5 @@
 package de.jobisoft.hitsterconnector
 
-import android.media.session.PlaybackState
-import de.jobisoft.hitsterconnector.util.SwitchDetector
 import de.jobisoft.hitsterconnector.util.RestartAction
 import de.jobisoft.hitsterconnector.util.RestartDecision
 import de.jobisoft.hitsterconnector.util.SongIdentity

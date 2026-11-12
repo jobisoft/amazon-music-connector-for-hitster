@@ -8,5 +8,6 @@ data class SongMapping(
     val title: String,
     val artist: String,
     val year: Int?,
-    val album: String? = null
+    /** The Amazon track id from the card set, played first if there is one. */
+    val amazonId: String? = null
 )

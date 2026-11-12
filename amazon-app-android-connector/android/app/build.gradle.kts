@@ -35,8 +35,6 @@ android {
         // Without it (Android Studio) the app is a "dev" build.
         versionCode = (project.findProperty("buildVersionCode") as String?)?.toInt() ?: 1
         versionName = "1.0.1-" + ((project.findProperty("buildStamp") as String?) ?: "dev")
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     packaging {
@@ -59,7 +57,7 @@ android {
     // and name, so the debug and the production app are two apps that sit side by side on the phone.
     buildTypes {
         getByName("debug") {
-            // the debug channel (DebugLog, "Send diagnostics"), it finds the log sink of
+            // the debug channel (DebugLog), it finds the log sink of
             // tools/debug_sink.py by itself
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
@@ -165,7 +163,6 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     
@@ -174,9 +171,6 @@ dependencies {
     
     // ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    
-    // DataStore (for configuration)
-    implementation(libs.androidx.datastore.preferences)
     
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
@@ -201,13 +195,7 @@ dependencies {
     
     // Markdown parsing
     implementation(libs.commonmark)
-    
+
     // Testing
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

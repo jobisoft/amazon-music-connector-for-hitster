@@ -28,6 +28,8 @@ fun QuizScreen(
 
     // the quiz screen has a card at all times, keep the screen on
     KeepScreenOn(true)
+    // the status bar of some phones shows the title of the song, hide it as long as the quiz is on the screen
+    HideStatusBar(true)
     LaunchedEffect(files) { viewModel.start(files) }
 
     Scaffold(
@@ -46,8 +48,12 @@ fun QuizScreen(
                 onControl = viewModel::control,
                 onToggleReveal = viewModel::toggleReveal,
                 onNext = viewModel::playNextRandom,
+                onCancel = {
+                    viewModel.cancelAndLeave() // like Back: stops the song, leaves to the picker
+                    onNavigateBack()
+                },
                 onBack = {
-                    viewModel.leave() // stops the song and unmutes, the navigation does not wait for it
+                    viewModel.leave() // stops the song, the navigation does not wait for it
                     viewModel.reset()
                     onNavigateBack()
                 }

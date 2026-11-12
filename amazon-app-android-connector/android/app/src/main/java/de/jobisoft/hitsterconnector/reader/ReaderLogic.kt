@@ -1,5 +1,6 @@
 package de.jobisoft.hitsterconnector.reader
 
+import de.jobisoft.hitsterconnector.util.AmazonId
 import de.jobisoft.hitsterconnector.util.CsvLines
 
 /**
@@ -14,11 +15,9 @@ enum class Verdict(val wire: String) {
     }
 }
 
-/** The values of [ResultRow.source]. Rows without the column are from the reader. */
+/** The value of [ResultRow.source] for the reader mode. Rows without the column are from the reader. */
 object ReportSource {
     const val READER = "reader"
-    const val SCAN = "scan"
-    const val QUIZ = "quiz"
 }
 
 /**
@@ -38,20 +37,23 @@ data class ResultRow(
     val cardTitle: String?,
     val cardArtist: String?,
     /** Where the answer came from: the reader mode, or a card of the game ("scan", "quiz"). */
-    val source: String = ReportSource.READER
+    val source: String = ReportSource.READER,
+    /** Our Amazon track id and the one on the card as the user entered it, "" for none, null if the row has no such column. */
+    val ourAmazonId: String? = null,
+    val cardAmazonId: String? = null
 ) {
     val key: String get() = ReaderLogic.key(setFile, card)
 }
 
-/** What the user entered for a wrong card, validated: all three values, at least one differs from ours. */
-data class Edit(val year: Int, val title: String, val artist: String)
+/** What the user entered for a wrong card, validated: all four values, at least one differs from ours. [amazonId] "" means no id. */
+data class Edit(val year: Int, val title: String, val artist: String, val amazonId: String = "")
 
 /** The cards with a correction: the number the screen shows next to the cards scanned in this visit. */
 data class Counters(val updated: Int)
 
 /** The logic of the reader mode without Android: CSV lines, the year check, the counters. */
 object ReaderLogic {
-    const val RESULT_HEADER = "time,set,card,verdict,ourYear,ourTitle,ourArtist,cardYear,cardTitle,cardArtist,source"
+    const val RESULT_HEADER = "time,set,card,verdict,ourYear,ourTitle,ourArtist,cardYear,cardTitle,cardArtist,source,ourAmazonId,cardAmazonId"
 
     fun key(file: String, card: Int) = "$file#$card"
 
@@ -75,26 +77,28 @@ object ReaderLogic {
             row.time, row.setFile, row.card.toString(), row.verdict.wire,
             row.ourYear?.toString().orEmpty(), row.ourTitle, row.ourArtist,
             row.cardYear?.toString().orEmpty(), row.cardTitle.orEmpty(), row.cardArtist.orEmpty(),
-            row.source
+            row.source, row.ourAmazonId.orEmpty(), row.cardAmazonId.orEmpty()
         )
     )
 
     /**
-     * A line of `reader_results.csv`, null for a header and for lines that are not one. Accepted: 11 fields,
-     * 12 fields (a column `suspect`, 0 or 1, before `source`, it is dropped) and 7 fields (year only).
+     * A line of `reader_results.csv`, null for a header and for lines that are not one. Accepted: 13 fields
+     * (with the two ids at the end), 11 fields (without them), 12 fields (a column `suspect`, 0 or 1,
+     * before `source`, it is dropped) and 7 fields (year only).
      */
     fun parseResultLine(line: String): ResultRow? {
         if (line.isBlank() || line.startsWith("time,")) return null
         val f = parseCsvLine(line)
         return when (f.size) {
-            11, 12 -> {
+            11, 12, 13 -> {
                 val card = f[2].toIntOrNull() ?: return null
                 // only "wrong" is a report, any other word is dropped
                 val verdict = Verdict.fromWire(f[3]) ?: return null
                 ResultRow(
                     f[0], f[1], card, verdict, f[4].toIntOrNull(), f[5], f[6], f[7].toIntOrNull(),
                     f[8], f[9],
-                    (if (f.size == 12) f[11] else f[10]).takeIf { it.isNotBlank() && it != "0" && it != "1" } ?: ReportSource.READER
+                    (if (f.size == 12) f[11] else f[10]).takeIf { it.isNotBlank() && it != "0" && it != "1" } ?: ReportSource.READER,
+                    if (f.size == 13) f[11] else null, if (f.size == 13) f[12] else null
                 )
             }
             7 -> {
@@ -106,31 +110,38 @@ object ReaderLogic {
         }
     }
 
-    /** Which of year, title and artist the card says differently. A row with a year only can differ in the year only. */
+    /** Which of year, title, artist and amazonId the card says differently. A row with a year only can differ in the year only. */
     fun changed(row: ResultRow): List<String> {
         val list = ArrayList<String>()
         if (row.cardYear != null && row.cardYear != row.ourYear) list.add("year")
         if (row.cardTitle != null && row.cardTitle.trim() != row.ourTitle.trim()) list.add("title")
         if (row.cardArtist != null && row.cardArtist.trim() != row.ourArtist.trim()) list.add("artist")
+        if (row.cardAmazonId != null && row.cardAmazonId.trim() != row.ourAmazonId.orEmpty().trim()) list.add("amazonId")
         return list
     }
 
     /**
      * The "Save" rule of the form for a wrong card: the year is four digits from 1900 to this year, title
-     * and artist are not empty (after trimming, a line break counts as a space), and at least one of the
-     * three differs from ours. Returns the values to save, or null if the form is not ready.
+     * and artist are not empty (after trimming, a line break counts as a space), the Amazon id is empty, a
+     * track id or a link with one ([AmazonId.fromInput]), and at least one of the four differs from ours.
+     * Returns the values to save, or null if the form is not ready.
      */
     fun evaluateEdit(
         yearText: String, title: String, artist: String,
-        ourYear: Int?, ourTitle: String, ourArtist: String, currentYear: Int
+        ourYear: Int?, ourTitle: String, ourArtist: String, currentYear: Int,
+        amazonIdText: String = "", ourAmazonId: String? = null
     ): Edit? {
         val year = validateYear(yearText, currentYear) ?: return null
         val t = collapse(title)
         val a = collapse(artist)
         if (t.isEmpty() || a.isEmpty()) return null
-        val differs = year != ourYear || t != ourTitle.trim() || a != ourArtist.trim()
-        return if (differs) Edit(year, t, a) else null
+        val id = AmazonId.fromInput(amazonIdText) ?: return null
+        val differs = year != ourYear || t != ourTitle.trim() || a != ourArtist.trim() || id != ourAmazonId.orEmpty()
+        return if (differs) Edit(year, t, a, id) else null
     }
+
+    /** The text under the field for the id when what was entered is no id, null if it is fine (an empty field is fine). */
+    fun amazonIdError(text: String): String? = if (AmazonId.fromInput(text) == null) "Not an Amazon track ID" else null
 
     /** Line breaks, tabs and runs of spaces become one space, the ends are trimmed: no newline reaches the CSV or the search text. */
     fun collapse(text: String): String = text.replace(Regex("\\s+"), " ").trim()

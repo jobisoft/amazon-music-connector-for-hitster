@@ -52,7 +52,7 @@ fun HelpScreen(
                 Section(
                     title = "Modes",
                     content = """
-                        1. Play Mode: scan a card. The song starts at 20 seconds (short songs earlier). Title, artist and year stay hidden, tap the blurred box to show them. The buttons pause, stop and jump 10 seconds.
+                        1. Play Mode: scan a card. The song starts at the start position set in the Options, 20 seconds by default (short songs earlier). Title, artist and year stay hidden, tap the blurred box to show them. The buttons pause, stop and jump 10 seconds.
                         2. Quiz Mode: pick card sets. Random cards play one after another, none twice until all have played.
                         3. Reader Mode: scan a card to see its artist, year and title. "Send to Amazon Music app" plays it.
                     """.trimIndent()
@@ -62,7 +62,7 @@ fun HelpScreen(
                     title = "Notes",
                     content = """
                         • A card is wrong? Tap "Report as wrong", change the values and save. The correction stays on this phone. "Export" in Reader Mode shares them as a file.
-                        • The last second of a song is muted and the sound stays muted until the next card, so Amazon cannot go on with another song. The mute covers all music on the phone.
+                        • A song is paused one second before its end, so Amazon should not go on with another song.
                         • Amazon may play another version of a song, for example a remix. The app then says so.
                         • If the Amazon Music app stays on top, go back to this app.
                         • "Card Config" imports more card sets from CSV files on the phone.

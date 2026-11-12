@@ -22,29 +22,42 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import de.jobisoft.hitsterconnector.MainActivity
 import de.jobisoft.hitsterconnector.data.debug.DebugLog
 import de.jobisoft.hitsterconnector.util.AppForeground
+import de.jobisoft.hitsterconnector.util.AmazonId
 import de.jobisoft.hitsterconnector.util.CrashReporter
 import de.jobisoft.hitsterconnector.util.Safe
 import de.jobisoft.hitsterconnector.util.LeaveScreen
 import de.jobisoft.hitsterconnector.util.PlayAction
+import de.jobisoft.hitsterconnector.util.EndDecision
 import de.jobisoft.hitsterconnector.util.PlayDecision
+import de.jobisoft.hitsterconnector.util.PlayFlow
+import de.jobisoft.hitsterconnector.util.PlayReactor
+import de.jobisoft.hitsterconnector.util.PlayStatus
+import de.jobisoft.hitsterconnector.util.PlayWait
 import de.jobisoft.hitsterconnector.util.RestartAction
 import de.jobisoft.hitsterconnector.util.RestartDecision
+import de.jobisoft.hitsterconnector.util.SessionSnapshot
 import de.jobisoft.hitsterconnector.util.SongIdentity
 import de.jobisoft.hitsterconnector.util.StartJump
+import de.jobisoft.hitsterconnector.util.PreferIdSetting
+import de.jobisoft.hitsterconnector.util.StartSetting
 import de.jobisoft.hitsterconnector.util.SearchQuery
+import de.jobisoft.hitsterconnector.util.StateNames
 import de.jobisoft.hitsterconnector.util.StopConfirm
+import de.jobisoft.hitsterconnector.util.TitleMatch
 import de.jobisoft.hitsterconnector.util.VersionCheck
-import de.jobisoft.hitsterconnector.util.StreamMute
+import de.jobisoft.hitsterconnector.util.StreamGuard
+import de.jobisoft.hitsterconnector.util.VolumeDuck
 import de.jobisoft.hitsterconnector.data.media.AmazonMusicListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.Locale
-import java.text.Normalizer
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -54,8 +67,9 @@ data class PlayerPosition(val position: Float, val duration: Float, val playing:
 /**
  * Plays songs in the Amazon Music app of this phone and controls them.
  *
- *  - Start: the Android "play from search" intent (the one Google Assistant uses), sent to the
- *    package of Amazon Music with title and artist.
+ *  - Start: the media session of Amazon Music gets the track id of the card (playFromUri), or a text
+ *    search (playFromSearch). Without a session, Amazon Music is woken by a media button key, or by the
+ *    play-from-search intent as the last resort.
  *  - Control: the MediaSession of Amazon Music, found through MediaSessionManager. Android
  *    allows this only for an app with notification access (see [AmazonMusicListener]).
  *
@@ -70,20 +84,25 @@ class ConnectorRepository @Inject constructor(
     companion object {
         const val AMAZON_MUSIC = "com.amazon.mp3"
 
-        /** Songs start here. */
-        private const val START_AT = 20f
         private const val LAUNCH_WAIT_MS = 8_000L
         private const val MEDIA_BUTTON_WAIT_MS = 3_000L
         private const val BRING_BACK_MS = 8_000L
         private const val ASK_ATTEMPTS = 3
         private const val ASK_PAUSE_MS = 1_500L
-        private const val TITLE_POLL_MS = 50L
-        private const val RETRY_WAIT_MS = 3_000L
-        private const val DURATION_WAIT_MS = 1_500L
-        private const val SEEK_ATTEMPTS = 4
-        private const val SEEK_WAIT_MS = 1_200L
-        private const val PLAY_RETRY_MS = 1_500L
-        private const val PLAY_WAIT_MS = 3_000L
+        private const val SEARCH_STEP_MS = 4_000L
+
+        /** Time for a search result to start playing once the session shows it. */
+        private const val SEARCH_START_MS = 4_500L
+        private const val STALE_ITEM_MS = 1_500L
+
+        /** Time for the session to show the requested id after the address was handed over. */
+        private const val ID_STEP_MS = PlayFlow.LOAD_MS
+
+        /** The top level domain of the address of the track. The Amazon IDs of the card sets are IDs of the German store. */
+        private const val STORE_TLD = "de"
+
+        /** The step name of the id route, it is also `PlayAnswer.via` when this step made the song play. */
+        const val ID_STEP_NAME = "i-playFromUri"
     }
 
     /** Set when a card has been scanned, to log the time until the song plays at its start offset. */
@@ -131,7 +150,9 @@ class ConnectorRepository @Inject constructor(
         val card: String?,
         val mediaId: String?,
         /** The title as the session of Amazon Music shows it. */
-        val sessionTitle: String?
+        val sessionTitle: String?,
+        /** The Amazon track id of the card, played first if there is one. */
+        val amazonId: String? = null
     )
 
     @Volatile
@@ -144,6 +165,14 @@ class ConnectorRepository @Inject constructor(
     /** True from the end of the song until the next request, see [EndGuard.songEnded]. */
     val songEnded get() = endGuard.songEnded
 
+    /**
+     * True if the playhead of the player is in the end zone of its song. That is the song that was paused for
+     * its end, and also a playhead that somebody put there by hand. Resuming from there would play inside the
+     * zone, so "Play" and "Play again" start the card song again from its start offset instead.
+     */
+    private fun atEndOfSong(controller: MediaController?): Boolean =
+        controller != null && EndDecision.inEndZone(positionOf(controller.playbackState), durationOf(controller))
+
     /** Is the player on the song we asked for? Without a request yet there is nothing to compare, then yes. */
     private fun onRequestedSong(controller: MediaController): Boolean {
         val last = lastRequested ?: return true
@@ -154,9 +183,17 @@ class ConnectorRepository @Inject constructor(
         )
     }
 
-    /** Answer to a play request. */
-    /** [versionNote] is set if Amazon played another version than the card (remix, live ...), shown as a small line. */
-    data class PlayAnswer(val ok: Boolean, val message: String?, val versionNote: String? = null)
+    /**
+     * [versionNote] is set if Amazon played another version than the card (remix, live ...), shown as a small line.
+     * [via] is the step that made the song play, [shownMediaId] the id the session of Amazon Music shows.
+     */
+    data class PlayAnswer(
+        val ok: Boolean,
+        val message: String?,
+        val versionNote: String? = null,
+        val via: String? = null,
+        val shownMediaId: String? = null
+    )
 
     // ── set up ────────────────────────────────────────────────────────────────────
 
@@ -194,22 +231,7 @@ class ConnectorRepository @Inject constructor(
 
     // ── what the log shows ────────────────────────────────────────────────────────
 
-    private fun stateName(state: Int?): String = when (state) {
-        null -> "none"
-        PlaybackState.STATE_NONE -> "NONE"
-        PlaybackState.STATE_STOPPED -> "STOPPED"
-        PlaybackState.STATE_PAUSED -> "PAUSED"
-        PlaybackState.STATE_PLAYING -> "PLAYING"
-        PlaybackState.STATE_FAST_FORWARDING -> "FAST_FORWARDING"
-        PlaybackState.STATE_REWINDING -> "REWINDING"
-        PlaybackState.STATE_BUFFERING -> "BUFFERING"
-        PlaybackState.STATE_ERROR -> "ERROR"
-        PlaybackState.STATE_CONNECTING -> "CONNECTING"
-        PlaybackState.STATE_SKIPPING_TO_PREVIOUS -> "SKIPPING_TO_PREVIOUS"
-        PlaybackState.STATE_SKIPPING_TO_NEXT -> "SKIPPING_TO_NEXT"
-        PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM -> "SKIPPING_TO_QUEUE_ITEM"
-        else -> "UNKNOWN($state)"
-    }
+    private fun stateName(state: Int?): String = StateNames.of(state)
 
     private val actionNames = listOf(
         PlaybackState.ACTION_STOP to "STOP", PlaybackState.ACTION_PAUSE to "PAUSE",
@@ -314,33 +336,14 @@ class ConnectorRepository @Inject constructor(
         )
     }
 
-    private fun normalize(text: String): String =
-        Normalizer.normalize(text, Normalizer.Form.NFD)
-            .replace(Regex("\\p{M}+"), "")
-            .lowercase()
-            .replace(Regex("\\(.*?\\)|\\[.*?\\]"), " ") // "(Remastered)", "[Live]"
-            .replace(Regex("[^a-z0-9]+"), "")
-
-    private fun sameSong(shown: String?, wanted: String): Boolean {
-        val a = normalize(shown ?: return false)
-        val b = normalize(wanted)
-        return a.isNotEmpty() && b.isNotEmpty() && (a.contains(b) || b.contains(a))
-    }
-
-    /** A song shorter than the start offset plus 30 s starts at a quarter of its length (rounded down), any other song at the start offset. */
-    private fun startFor(duration: Float, wanted: Float? = null): Float {
-        val start = wanted ?: START_AT
-        return if (duration > 0 && duration < start + 30) kotlin.math.floor(duration / 4f) else start
-    }
+    /** Where a song of this length starts, by the start position of the Home screen (see [StartJump.startFor]). */
+    private fun startFor(duration: Float): Float = StartJump.startFor(duration, StartSetting.get(context))
 
     // ── play ──────────────────────────────────────────────────────────────────────
 
-    /** True for the second attempt of a request: the classic query without additions. */
-    @Volatile
-    private var plainQuery = false
-
-    @Volatile
-    private var versionRetried = false
+    /** What the load screen says under the sending text while a request runs, null for the default text. */
+    private val _playStatus = MutableStateFlow<String?>(null)
+    val playStatus: StateFlow<String?> = _playStatus.asStateFlow()
 
     /** The version note of the current request, null if the version looks right. */
     @Volatile
@@ -349,20 +352,14 @@ class ConnectorRepository @Inject constructor(
     @Volatile
     private var queueLogged = false
 
-    /** The (corrected) year of the card of the current request, for the first query. */
-    @Volatile
-    private var requestYear: Int? = null
-
-    private fun queryFor(title: String, artist: String) =
-        if (plainQuery) SearchQuery.fallback(title, artist) else SearchQuery.primary(title, artist, requestYear)
-
-    private fun titleExtraFor(title: String) = SearchQuery.titleExtra(title, requestYear, plainQuery)
-
+    /**
+     * The extras of a search: focus, title, artist and the query.
+     */
     private fun extrasFor(title: String, artist: String) = Bundle().apply {
         putString(MediaStore.EXTRA_MEDIA_FOCUS, MediaStore.Audio.Media.ENTRY_CONTENT_TYPE)
-        putString(MediaStore.EXTRA_MEDIA_TITLE, titleExtraFor(title))
+        putString(MediaStore.EXTRA_MEDIA_TITLE, title)
         putString(MediaStore.EXTRA_MEDIA_ARTIST, artist)
-        putString(SearchManager.QUERY, queryFor(title, artist))
+        putString(SearchManager.QUERY, SearchQuery.query(title, artist))
     }
 
     /** The play-from-search intent, aimed at Amazon Music. */
@@ -370,24 +367,6 @@ class ConnectorRepository @Inject constructor(
         setPackage(AMAZON_MUSIC)
         putExtras(extrasFor(title, artist))
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-
-    /** The web address of the search, opened in the Amazon Music app. */
-    private fun webIntent(title: String, artist: String): Intent {
-        val tld = when (Locale.getDefault().country) {
-            "DE", "AT", "CH" -> "de"
-            "GB" -> "co.uk"
-            "FR" -> "fr"
-            "ES" -> "es"
-            "IT" -> "it"
-            "JP" -> "co.jp"
-            else -> "com"
-        }
-        val query = Uri.encode("$title $artist")
-        return Intent(Intent.ACTION_VIEW, Uri.parse("https://music.amazon.$tld/search/$query")).apply {
-            setPackage(AMAZON_MUSIC)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
     }
 
     /** True once this play called startActivity for Amazon Music, whose screen may then be in front. */
@@ -408,29 +387,55 @@ class ConnectorRepository @Inject constructor(
         }
     }
 
-    /** One way to get Amazon Music to play the song. [run] returns false if it could not even try. */
-    private inner class Step(val name: String, val timeoutMs: Long, val run: suspend () -> Boolean)
-
-    private fun stepB(title: String, artist: String) = Step("b-playFromSearch", 4_000) {
-        val controller = amazonController()
+    /** Hands the search to the session, false if it could not even try. */
+    private fun sendSearch(controller: MediaController?, title: String, artist: String): Boolean {
         if (controller == null) {
             DebugLog.log("b-playFromSearch", "skipped, Amazon Music has no active session", mapOf("sessions" to describeSessions()))
+            return false
+        }
+        DebugLog.log("b-playFromSearch", "calling transportControls.playFromSearch", mapOf("session" to describe(controller)))
+        return try {
+            val query = SearchQuery.query(title, artist)
+            DebugLog.log("search", "query", mapOf("wantedTitle" to title, "wantedArtist" to artist, "querySent" to query))
+            controller.transportControls.playFromSearch(query, extrasFor(title, artist))
+            true
+        } catch (e: Throwable) {
+            DebugLog.log("b-playFromSearch", "threw", mapOf("error" to e))
             false
-        } else {
-            DebugLog.log("b-playFromSearch", "calling transportControls.playFromSearch", mapOf("session" to describe(controller)))
-            try {
-                val query = queryFor(title, artist)
-                DebugLog.log("search", "query", mapOf("attempt" to (if (plainQuery) 2 else 1), "year" to requestYear, "wantedTitle" to title, "titleExtra" to titleExtraFor(title), "wantedArtist" to artist, "querySent" to query))
-                controller.transportControls.playFromSearch(query, extrasFor(title, artist))
-                true
-            } catch (e: Throwable) {
-                DebugLog.log("b-playFromSearch", "threw", mapOf("error" to e))
-                false
-            }
         }
     }
 
-    private fun stepE(title: String, artist: String) = Step("e-webLink", 10_000) { startLogged("e-webLink", webIntent(title, artist)) }
+    /** Hands the track id of the card to the session as the web address of the track with `agent=google`. False if it could not even try. */
+    private fun sendId(controller: MediaController?, id: String, title: String, artist: String): Boolean {
+        if (controller == null) {
+            DebugLog.log(ID_STEP_NAME, "skipped, Amazon Music has no active session", mapOf("sessions" to describeSessions()))
+            return false
+        }
+        return try {
+            DebugLog.log(
+                "search", "query by id",
+                mapOf("amazonId" to id, "wantedTitle" to title, "wantedArtist" to artist, "session" to describe(controller))
+            )
+            controller.transportControls.playFromUri(Uri.parse(AmazonId.playUri(id, STORE_TLD)), Bundle())
+            true
+        } catch (e: Throwable) {
+            DebugLog.log(ID_STEP_NAME, "threw", mapOf("error" to e))
+            false
+        }
+    }
+
+    /** What the session shows after the id did not show up, one event so that unknown or wrong ids are in the log. */
+    private fun logIdNotShown(id: String, title: String, shown: SessionSnapshot?) {
+        DebugLog.log(
+            "play", "id not shown",
+            mapOf(
+                "amazonId" to id, "wantedTitle" to title, "budgetMs" to ID_STEP_MS,
+                "shownId" to shown?.mediaId, "shownTitle" to shown?.title, "state" to StateNames.of(shown?.state)
+            )
+        )
+    }
+
+    private val sessionWatcher by lazy { SessionWatcher(context, listenerComponent(), AMAZON_MUSIC) }
 
     private val foregroundScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + Safe.handler)
 
@@ -543,73 +548,13 @@ class ConnectorRepository @Inject constructor(
     @Volatile
     private var titleLoaded = false
 
-    private fun controllerShows(title: String): MediaController? =
-        amazonController()?.takeIf { sameSong(it.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE), title) }
+    /** True while the track id of the card is asked: the result is not asked again with a text search. */
+    @Volatile
+    private var byId = false
 
-    /**
-     * Waits for the requested title to show in the session (every 50 ms, the state does not matter:
-     * the player starts to play at once, from the beginning). At that moment [jumpAndPlay] takes over.
-     * [timeoutMs] is the time for the title to appear.
-     */
-    private suspend fun waitForStart(tag: String, title: String, artist: String, timeoutMs: Long): Boolean {
-        var end = SystemClock.elapsedRealtime() + timeoutMs
-        while (SystemClock.elapsedRealtime() < end) {
-            var controller = controllerShows(title)
-            if (controller != null) {
-                titleLoaded = true
-                var shown = controller.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)
-                var suspicious = VersionCheck.suspicious(title, shown)
-                logSearchResult(title, artist, controller, suspicious)
-                if (suspicious && !versionRetried) {
-                    versionRetried = true
-                    val firstId = controller.metadata?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID)
-                    controller = retryClassic(controller, title, artist, firstId) ?: controller
-                    shown = controller.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)
-                    suspicious = VersionCheck.suspicious(title, shown)
-                    end = SystemClock.elapsedRealtime() + timeoutMs
-                }
-                        versionNote = if (suspicious) "Amazon played a different version: $shown" else null
-                DebugLog.log("search", "final", mapOf("wantedTitle" to title, "finalShown" to shown, "retried" to versionRetried, "note" to versionNote))
-                return jumpAndPlay(tag, controller, title)
-            }
-            delay(TITLE_POLL_MS)
-        }
-        return false
-    }
-
-    /**
-     * The first result was another version: pause it (it started to play, the stream is muted), ask again with
-     * the classic query and wait up to [RETRY_WAIT_MS] for a different item. Returns the controller showing it,
-     * or null if nothing else came (then the first one is used).
-     */
-    private suspend fun retryClassic(first: MediaController, title: String, artist: String, firstId: String?): MediaController? {
-        try { first.transportControls.pause() } catch (e: Throwable) { DebugLog.log("search", "pause threw", mapOf("error" to e)) }
-        plainQuery = true
-        val query = queryFor(title, artist)
-        DebugLog.log(
-            "search", "query",
-            mapOf("attempt" to 2, "year" to requestYear, "wantedTitle" to title, "titleExtra" to titleExtraFor(title),
-                "wantedArtist" to artist, "querySent" to query)
-        )
-        try {
-            first.transportControls.playFromSearch(query, extrasFor(title, artist))
-        } catch (e: Throwable) {
-            DebugLog.log("search", "retry threw", mapOf("error" to e))
-            return null
-        }
-        val end = SystemClock.elapsedRealtime() + RETRY_WAIT_MS
-        while (SystemClock.elapsedRealtime() < end) {
-            val c = controllerShows(title)
-            val id = c?.metadata?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID)
-            if (c != null && id != null && id != firstId) {
-                logSearchResult(title, artist, c, VersionCheck.suspicious(title, c.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)))
-                return c
-            }
-            delay(TITLE_POLL_MS)
-        }
-        DebugLog.log("search", "retry gave the same item", mapOf("firstId" to firstId))
-        return null
-    }
+    /** The media id of the item that failed to start in the id route, so the search does not take it for its own result at once. */
+    @Volatile
+    private var staleId: String? = null
 
     /** The debug record of what Amazon loaded, and once per request its queue. Never throws. */
     private fun logSearchResult(title: String, artist: String, controller: MediaController, suspicious: Boolean) {
@@ -622,7 +567,8 @@ class ConnectorRepository @Inject constructor(
                     "shownTitle" to shown, "shownArtist" to m?.getString(MediaMetadata.METADATA_KEY_ARTIST),
                     "mediaId" to m?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID),
                     "durationMs" to m?.getLong(MediaMetadata.METADATA_KEY_DURATION),
-                    "attempt" to (if (plainQuery) 2 else 1), "suspicious" to suspicious, "markers" to VersionCheck.found(title, shown))
+                    "suspicious" to suspicious, "markers" to VersionCheck.found(title, shown),
+                    "viaId" to byId)
             )
             if (!queueLogged) {
                 queueLogged = true
@@ -638,148 +584,22 @@ class ConnectorRepository @Inject constructor(
     }
 
     /**
-     * The new title shows: pause at once, seek to the start offset, wait until the position is really
-     * there (the title must still be the new one), then play() and wait for PLAYING. The music stream
-     * is muted meanwhile, so the part of the intro that gets out before the pause is not heard.
-     * The `start` event has the numbers: title to pause, to the confirmed seek, to PLAYING, and the
-     * furthest position seen before the jump.
-     */
-    private suspend fun jumpAndPlay(tag: String, first: MediaController, title: String): Boolean {
-        val t0 = SystemClock.elapsedRealtime()
-        fun since() = SystemClock.elapsedRealtime() - t0
-        val seen = mutableListOf(positionOf(first.playbackState))
-        fun sample() { controllerShows(title)?.let { seen += positionOf(it.playbackState) } }
-
-        // 1. pause at once
-        try {
-            first.transportControls.pause()
-        } catch (e: Throwable) {
-            DebugLog.log(tag, "pause threw", mapOf("error" to e))
-        }
-        val pauseSentMs = since()
-
-        // 2. the length of the song may take a moment to show, the target depends on it
-        var duration = durationOf(first)
-        while (duration <= 0f && since() < DURATION_WAIT_MS) {
-            delay(TITLE_POLL_MS)
-            sample()
-            duration = controllerShows(title)?.let { durationOf(it) } ?: 0f
-        }
-        val target = if (duration > 0f) startFor(duration) else 0f
-
-        // 3. seek, and wait until the position is near the target, repeat if it does not take
-        var seekConfirmedMs: Long? = null
-        var seekCalls = 0
-        var repausedBecausePlaying = 0
-        if (target > 0f) {
-            for (attempt in 1..SEEK_ATTEMPTS) {
-                val c = controllerShows(title) ?: break
-                seekCalls++
-                try {
-                    c.transportControls.seekTo((target * 1000).toLong())
-                } catch (e: Throwable) {
-                    DebugLog.log(tag, "seekTo threw", mapOf("attempt" to attempt, "error" to e))
-                }
-                val until = SystemClock.elapsedRealtime() + SEEK_WAIT_MS
-                while (SystemClock.elapsedRealtime() < until) {
-                    delay(TITLE_POLL_MS)
-                    val now = controllerShows(title) ?: continue
-                    sample()
-                    val position = positionOf(now.playbackState)
-                    val playing = now.playbackState?.state == PlaybackState.STATE_PLAYING
-                    if (StartJump.near(position, target)) {
-                        seekConfirmedMs = since()
-                        break
-                    }
-                    if (playing && position < target - StartJump.NEAR_S) {
-                        // the pause did not take, or the player started again at 0
-                        repausedBecausePlaying++
-                        try { now.transportControls.pause() } catch (_: Throwable) { }
-                    }
-                }
-                if (seekConfirmedMs != null) break
-            }
-        }
-
-        // 4. play, and wait for PLAYING (a freshly started Amazon player may need a second play())
-        var playingMs: Long? = null
-        for (call in 1..2) {
-            val c = controllerShows(title) ?: break
-            DebugLog.log(
-                tag, "loaded but paused, calling play()",
-                mapOf("call" to call, "positionS" to positionOf(c.playbackState), "targetS" to target,
-                    "session" to describe(c))
-            )
-            try {
-                c.transportControls.play()
-            } catch (e: Throwable) {
-                DebugLog.log(tag, "play() threw", mapOf("call" to call, "error" to e))
-                break
-            }
-            val until = SystemClock.elapsedRealtime() + if (call == 1) PLAY_RETRY_MS else PLAY_WAIT_MS
-            while (SystemClock.elapsedRealtime() < until) {
-                delay(TITLE_POLL_MS)
-                if (controllerShows(title)?.playbackState?.state == PlaybackState.STATE_PLAYING) {
-                    playingMs = since()
-                    break
-                }
-            }
-            if (playingMs != null) break
-            DebugLog.log(tag, "still not playing after play()", mapOf("call" to call))
-        }
-
-        DebugLog.log(
-            "start", "load, pause, seek, play",
-            mapOf(
-                "step" to tag,
-                "titleToPauseMs" to pauseSentMs,
-                "titleToSeekConfirmedMs" to seekConfirmedMs,
-                "titleToPlayingMs" to playingMs,
-                "durationS" to duration,
-                "targetS" to target,
-                "seekCalls" to seekCalls,
-                "pausedAgainBecausePlaying" to repausedBecausePlaying,
-                "maxPositionSeenS" to seen.maxOrNull(),
-                "leakedIntroS" to StartJump.leakedSeconds(seen, target)
-            )
-        )
-        return playingMs != null
-    }
-
-    /** Every 500 ms the state of all media sessions, as long as the job runs. */
-    private suspend fun dumpSessions(step: String) {
-        if (!DebugLog.ENABLED) return
-        var n = 0
-        while (true) {
-            try {
-                DebugLog.log("sessions", "tick $step", mapOf("n" to n++, "sessions" to describeSessions()))
-            } catch (e: Throwable) {
-                DebugLog.log("sessions", "tick failed", mapOf("error" to e))
-            }
-            delay(500)
-        }
-    }
-
-    /** Mutes the music stream for the load of the next song. The view models call it right after the stop is confirmed. */
-    fun muteForNewSong() = StreamMute.mute(context)
-
-    /** Undoes the mute at once, for a request that fails before or without play(). */
-    fun unmuteNow(reason: String) = StreamMute.unmute(context, reason)
-
-    /**
-     * Plays the song: load it, pause, seek to the start offset, play (see [jumpAndPlay]). The stream
-     * is muted from before the request until the song plays at its start offset, in a `finally` it is
-     * always unmuted again. A failure unmutes at once.
+     * Plays the song: load it, pause, seek to the start offset, play (see [PlayDrive]). Before anything else
+     * the music stream is unmuted if it is muted, and the volume duck starts (see [VolumeDuck]).
      */
     suspend fun play(
         title: String,
         artist: String,
         year: Int?,
-        card: String?
+        card: String?,
+        amazonId: String? = null
     ): Result<PlayAnswer> {
-        StreamMute.mute(context) // already done by the view model after the stop, this covers the other callers
+        StreamGuard.ensureAudible(context)
+        VolumeDuck.duck(context)
+        _playStatus.value = null
         return try {
-            playInner(title, artist, year, card)
+            // the Options switch "Prefer Amazon ID over search": off, the card is searched like one without an id
+            playInner(title, artist, year, card, amazonId.takeIf { PreferIdSetting.useId(PreferIdSetting.isEnabled(context), it) })
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Throwable) {
@@ -790,7 +610,9 @@ class ConnectorRepository @Inject constructor(
             DebugLog.log("play", "play path threw", mapOf("error" to e))
             Result.failure(Exception("Unexpected error in the play path: ${e.javaClass.simpleName}: ${e.message}"))
         } finally {
-            StreamMute.unmute(context, "play finished")
+            _playStatus.value = null
+            // every way out of the request (failure, cancel, exception): the level goes back, a second call finds nothing
+            VolumeDuck.restore(context, "request ended")
         }
     }
 
@@ -798,7 +620,8 @@ class ConnectorRepository @Inject constructor(
         title: String,
         artist: String,
         year: Int?,
-        card: String?
+        card: String?,
+        amazonId: String?
     ): Result<PlayAnswer> = withContext(Dispatchers.IO) {
         val started = SystemClock.elapsedRealtime()
         // the new song is "another song" for the guard of the old one
@@ -816,69 +639,205 @@ class ConnectorRepository @Inject constructor(
 
         var winner: String? = null
 
-        /** Runs one step with the session log running beside it, true if the right song plays afterwards. */
-        suspend fun attempt(step: Step): Boolean {
-            val ok = coroutineScope {
-                val dumper = launch { dumpSessions(step.name) }
-                DebugLog.log(step.name, "step starts", mapOf("timeoutMs" to step.timeoutMs))
-                val tried = try {
-                    step.run()
-                } catch (e: Throwable) {
-                    DebugLog.log(step.name, "step threw", mapOf("error" to e))
-                    false
-                }
-                val playing = try {
-                    if (tried) waitForStart(step.name, title, artist, step.timeoutMs) else false
-                } catch (e: kotlinx.coroutines.CancellationException) {
-                    throw e
-                } catch (e: Throwable) {
-                    DebugLog.log(step.name, "waiting for the song threw", mapOf("error" to e))
-                    CrashReporter.record(context, "play step ${step.name}", e)
-                    false
-                }
-                dumper.cancel()
-                DebugLog.log(
-                    step.name, "step outcome",
-                    mapOf("tried" to tried, "songPlays" to playing,
-                        "elapsedMs" to SystemClock.elapsedRealtime() - started, "sessions" to describeSessions())
-                )
-                playing
-            }
-            if (ok && winner == null) winner = step.name
-            return ok
+        /** A phase begins: status text and one `phase` event. */
+        fun enterPhase(phase: PlayFlow.Phase) {
+            _playStatus.value = PlayStatus.forPhase(phase)
+            DebugLog.log("play", "phase", mapOf("phase" to phase.name.lowercase(), "sinceRequestMs" to SystemClock.elapsedRealtime() - started))
         }
 
         uiStarted = false
         titleLoaded = false
-        plainQuery = false
-        versionRetried = false
-        requestYear = year
+        staleId = null
         queueLogged = false
         versionNote = null
+        byId = false
         val stepsRun = mutableListOf<String>()
-        val sessionExisted = amazonController() != null
-        DebugLog.log("play", "plan", mapOf("amazonSessionExisted" to sessionExisted))
+        val sessionAtStart = amazonController()
+        val bareSession = sessionAtStart != null && PlayFlow.isBareSession(
+            hasTitle = !sessionAtStart.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE).isNullOrEmpty(),
+            state = sessionAtStart.playbackState?.state ?: PlaybackState.STATE_NONE,
+            actions = sessionAtStart.playbackState?.actions ?: 0L
+        )
+        // a bare session (no title, nothing to control) is as good as none: the wake runs and the loaded item settles
+        val sessionExisted = sessionAtStart != null && !bareSession
+        val coldStart = !sessionExisted
+        DebugLog.log("play", "plan", mapOf("amazonSessionExisted" to sessionExisted, "bareSession" to bareSession, "startPosition" to StartSetting.get(context).key))
 
-        /** Waits for a session of Amazon Music with the session log running beside it. */
-        suspend fun waitForSession(label: String, timeoutMs: Long): Boolean = coroutineScope {
-            val dumper = launch { dumpSessions(label) }
-            val end = SystemClock.elapsedRealtime() + timeoutMs
-            while (SystemClock.elapsedRealtime() < end && amazonController() == null) delay(250)
-            dumper.cancel()
-            val appeared = amazonController() != null
+        /** Waits for a session of Amazon Music to appear. It is the listener of the sessions that answers, no polling. */
+        suspend fun waitForSession(label: String, timeoutMs: Long): Boolean {
+            val handle = sessionWatcher.open()
+            val appeared = try {
+                withTimeoutOrNull(timeoutMs) {
+                    var found = false
+                    for (event in handle.events) {
+                        if (event.snapshot != null) {
+                            found = true
+                            break
+                        }
+                    }
+                    found
+                } == true
+            } finally {
+                handle.close()
+            }
             DebugLog.log(
                 label, "wait for a session",
                 mapOf("sessionAppeared" to appeared, "elapsedMs" to SystemClock.elapsedRealtime() - started,
                     "sessions" to describeSessions())
             )
-            appeared
+            return appeared
         }
 
-        /** The session exists but may not be ready for playFromSearch yet: up to 3 tries, 1.5 s apart. */
+        /**
+         * One load attempt of the id route, see [PlayDrive]. The session listener is open before the request goes
+         * out, so no report is missed. Our item is paused at the first change, moved to the start offset and
+         * played when it is paused near it. A foreign item that replaced ours ends the attempt.
+         */
+        suspend fun idAttempt(id: String, reload: Int): PlayDrive.Result {
+            val handle = sessionWatcher.open()
+            try {
+                val baseline = handle.current()?.mediaId
+                val ctx = PlayReactor.Ctx(
+                    canReload = true, cold = coldStart, position = StartSetting.get(context), baselineMediaId = baseline,
+                    limitMs = PlayWait.BUFFER_WAIT_MS
+                )
+                DebugLog.log(ID_STEP_NAME, "step starts", mapOf("timeoutMs" to ID_STEP_MS, "reload" to reload))
+                val drive = PlayDrive(
+                    handle, ID_STEP_NAME, ctx, ID_STEP_MS,
+                    classify = { s, _ -> PlayFlow.classify(s.mediaId, id) },
+                    onOurs = { s, controller, ms ->
+                        titleLoaded = true
+                        val suspicious = VersionCheck.suspicious(title, s.title)
+                        logSearchResult(title, artist, controller, suspicious)
+                        versionNote = if (suspicious) "Amazon played a different version: ${s.title}" else null
+                        DebugLog.log("play", "id loaded", mapOf("amazonId" to id, "ms" to ms, "shownTitle" to s.title))
+                        enterPhase(PlayFlow.Phase.START)
+                    },
+                    onOursState = { s -> _playStatus.value = PlayStatus.forState(s.state) },
+                    onPlaySent = { VolumeDuck.restore(context, "play sent") }
+                )
+                return drive.run { sendId(handle.controller(), id, title, artist) }
+            } finally {
+                handle.close()
+            }
+        }
+
+        /**
+         * The id route of a card with an id: load, pause, seek, play (see [PlayDrive]). When a foreign item
+         * replaced ours the id is loaded again, see [PlayFlow.afterReplaced]. False when the route fails, the
+         * caller goes on with the search.
+         */
+        suspend fun idRoute(id: String): Boolean {
+            byId = true
+            val routeBegin = SystemClock.elapsedRealtime()
+            var reloads = 0
+            try {
+                while (true) {
+                    enterPhase(PlayFlow.Phase.LOAD)
+                    val r = idAttempt(id, reloads)
+                    val replaced = r.outcome == PlayDrive.Outcome.REPLACED ||
+                        (r.outcome == PlayDrive.Outcome.START_FAILED && r.lastItem == PlayFlow.Item.FOREIGN)
+                    when {
+                        r.outcome == PlayDrive.Outcome.PLAYING -> {
+                            if (winner == null) winner = ID_STEP_NAME
+                            return true
+                        }
+                        replaced -> {
+                            val next = PlayFlow.afterReplaced(reloads, SystemClock.elapsedRealtime() - routeBegin)
+                            DebugLog.log(
+                                "play", "session item replaced",
+                                mapOf("wantedId" to id, "foreignTitle" to r.last?.title,
+                                    "foreignMediaId" to (r.replacedBy ?: r.last?.mediaId),
+                                    "phase" to r.phase, "ms" to SystemClock.elapsedRealtime() - routeBegin,
+                                    "reloadsDone" to reloads, "next" to next.name.lowercase())
+                            )
+                            if (next != PlayFlow.Next.RELOAD) {
+                                staleId = id
+                                return false
+                            }
+                            reloads++
+                        }
+                        r.outcome == PlayDrive.Outcome.START_FAILED -> {
+                            val state = r.last?.state ?: PlaybackState.STATE_NONE
+                            staleId = id
+                            DebugLog.log(
+                                "play", "id start failed",
+                                mapOf("amazonId" to id, "reason" to (if (PlayWait.isLoading(state)) "buffering" else "not playing"),
+                                    "detail" to r.reason, "state" to stateName(state), "sessions" to describeSessions())
+                            )
+                            return false
+                        }
+                        else -> {
+                            logIdNotShown(id, title, r.last)
+                            staleId = null
+                            return false
+                        }
+                    }
+                }
+            } finally {
+                byId = false
+            }
+        }
+
+        /** One attempt of the text search, see [PlayDrive]. True if the right song plays afterwards. */
+        suspend fun searchAttempt(): Boolean {
+            val handle = sessionWatcher.open()
+            val begin = SystemClock.elapsedRealtime()
+            try {
+                val ctx = PlayReactor.Ctx(
+                    canReload = false, cold = false, position = StartSetting.get(context), baselineMediaId = handle.current()?.mediaId,
+                    limitMs = SEARCH_START_MS
+                )
+                DebugLog.log("b-playFromSearch", "step starts", mapOf("timeoutMs" to SEARCH_STEP_MS))
+                val drive = PlayDrive(
+                    handle, "b-playFromSearch", ctx, SEARCH_STEP_MS,
+                    classify = { s, t ->
+                        val stale = staleId
+                        when {
+                            stale != null && s.mediaId == stale && t - begin < STALE_ITEM_MS -> PlayFlow.Item.NONE
+                            !s.hasTitle -> PlayFlow.Item.NONE
+                            TitleMatch.same(s.title, title) -> PlayFlow.Item.OURS
+                            else -> PlayFlow.Item.FOREIGN
+                        }
+                    },
+                    onOurs = { s, controller, _ ->
+                        titleLoaded = true
+                        val suspicious = VersionCheck.suspicious(title, s.title)
+                        logSearchResult(title, artist, controller, suspicious)
+                        versionNote = if (suspicious) "Amazon played a different version: ${s.title}" else null
+                        DebugLog.log("search", "final", mapOf("wantedTitle" to title, "finalShown" to s.title, "note" to versionNote))
+                    },
+                    onOursState = {},
+                    onPlaySent = { VolumeDuck.restore(context, "play sent") }
+                )
+                val r = drive.run { sendSearch(handle.controller(), title, artist) }
+                val playing = r.outcome == PlayDrive.Outcome.PLAYING
+                DebugLog.log(
+                    "b-playFromSearch", "step outcome",
+                    mapOf("songPlays" to playing, "outcome" to r.outcome.name.lowercase(), "reason" to r.reason,
+                        "elapsedMs" to SystemClock.elapsedRealtime() - started, "sessions" to describeSessions())
+                )
+                if (playing && winner == null) winner = "b-playFromSearch"
+                return playing
+            } finally {
+                handle.close()
+            }
+        }
+
+        /**
+         * The session exists: the id route for a card with an id, a web address of the track with the parameter
+         * `agent=google` that the session hands to Amazon Music, so the track is loaded without opening a screen.
+         * Then the text search (up to 3 tries, 1.5 s apart).
+         */
         suspend fun askSession(): Boolean {
+            if (amazonId != null) {
+                stepsRun += "i"
+                if (idRoute(amazonId)) return true
+            }
+            enterPhase(PlayFlow.Phase.SEARCH)
             for (n in 1..ASK_ATTEMPTS) {
                 stepsRun += "b$n"
-                if (attempt(stepB(title, artist))) return true
+                if (PlayFlow.afterSearch(searchAttempt()) == PlayFlow.Next.PLAYING) return true
                 if (n < ASK_ATTEMPTS) delay(ASK_PAUSE_MS)
             }
             return false
@@ -891,6 +850,7 @@ class ConnectorRepository @Inject constructor(
             // cold start: first a wake without any screen (a0), only if that fails the intent (a),
             // which opens Amazon's screen and plays nothing by itself
             stepsRun += "a0"
+            enterPhase(PlayFlow.Phase.WAKE)
             var session = wakeByMediaButton(::waitForSession)
             if (!session) {
                 stepsRun += "a"
@@ -902,16 +862,6 @@ class ConnectorRepository @Inject constructor(
             }
         }
 
-        // the very last fallback, it opens Amazon Music's screen (again). Not while the right title is
-        // loaded: then the player only has to be started, and a second screen would not help
-        if (winner == null) {
-            if (titleLoaded) {
-                DebugLog.log("e-webLink", "skipped, the right title is loaded but does not play", mapOf("sessions" to describeSessions()))
-            } else {
-                stepsRun += "e"
-                attempt(stepE(title, artist))
-            }
-        }
         val controller = amazonController()
         if (winner == null || controller == null) {
             DebugLog.log("play", "no step made the song play")
@@ -928,29 +878,20 @@ class ConnectorRepository @Inject constructor(
         }
         DebugLog.log("play", "song plays", mapOf("step" to winner))
 
-        // the jump was done before play(). Look once more: the player may put the playhead back while it starts up
+        // the start jump and its correction happened in the reactions to the session reports, this is the record
         try {
-            var wanted = startFor(durationOf(controller))
-            if (wanted > 0) {
-                for (attempt in 1..4) {
-                    val at = positionOf(controller.playbackState)
-                    DebugLog.log("play", "position at the start offset", mapOf("attempt" to attempt, "position" to at, "wanted" to wanted))
-                    if (at >= wanted - 3) break
-                    ctl(controller, "seekTo(again)", wanted) { it.transportControls.seekTo((wanted * 1000).toLong()) }
-                    delay(700)
-                    wanted = startFor(durationOf(controller))
-                }
-            }
+            DebugLog.log(
+                "play", "position at the start offset",
+                mapOf("position" to positionOf(controller.playbackState), "wanted" to startFor(durationOf(controller)))
+            )
         } catch (e: Exception) {
-            DebugLog.log("play", "jumping ahead failed", mapOf("error" to e))
+            DebugLog.log("play", "reading the position failed", mapOf("error" to e))
         }
-        // the song plays at its start offset: sound back on
-        StreamMute.unmute(context, "song plays at its start offset")
         // what "Play again" replays, and what the buttons check the player against
         val shown = controller.metadata
         lastRequested = LastSong(
             title, artist, year, card,
-            shown?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID), shown?.getString(MediaMetadata.METADATA_KEY_TITLE)
+            shown?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID), shown?.getString(MediaMetadata.METADATA_KEY_TITLE), amazonId
         )
         endGuard.arm("song started")
         // last: if an Amazon Music screen was opened on the way, this app's screen goes back to the front
@@ -965,7 +906,34 @@ class ConnectorRepository @Inject constructor(
                 "positionSeconds" to positionOf(amazonController()?.playbackState)
             )
         )
-        Result.success(PlayAnswer(true, null, versionNote))
+        Result.success(PlayAnswer(true, null, versionNote, winner, shown?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID)))
+    }
+
+    /**
+     * "Scan next card": the song of the card is stopped like by the Stop button (pause, rewind to the start
+     * offset) and the guard is disarmed, in this order, before the camera comes back.
+     * Takes about as long as the Stop button, at most 2.5 s. A later scan stops again before its own request.
+     */
+    suspend fun stopForNextCard() = withContext(Dispatchers.IO) {
+        val controller = amazonController()
+        val stop = LeaveScreen.shouldStop(playedHere = true, hasSession = controller != null)
+        DebugLog.log(
+            "leave", "next card: stop",
+            mapOf("stopping" to stop, "session" to controller?.let { describe(it) }, "songEnded" to endGuard.songEnded.value)
+        )
+        try {
+            if (stop && controller != null) {
+                val moved = kotlinx.coroutines.withTimeoutOrNull(2_500L) { pauseAndRewind(controller) }
+                stoppedByUser = true
+                DebugLog.log("leave", "next card: stopped", mapOf("fromS" to moved?.first, "toS" to moved?.second, "timedOut" to (moved == null)))
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            DebugLog.log("leave", "next card: stop failed", mapOf("error" to e))
+        }
+        endGuard.disarm("next card")
+        VolumeDuck.restore(context, "next card")
     }
 
     /** Calls the controller, and logs the call and what the session says a moment later. */
@@ -1010,17 +978,16 @@ class ConnectorRepository @Inject constructor(
 
     /**
      * The screen with the controls was left (Back, the system back, the screen destroyed): the song is
-     * stopped like by the Stop button (pause, rewind to the start offset), the guard is disarmed, the
-     * mute undone, in this order. It runs in a scope of the application: the navigation does not wait,
-     * and it finishes also after the view model of the screen is gone. A screen that never played
-     * something leaves the player alone, but still undoes a mute of ours.
+     * stopped like by the Stop button (pause, rewind to the start offset) and the guard is disarmed, in this
+     * order. It runs in a scope of the application: the navigation does not wait, and it finishes also after
+     * the view model of the screen is gone. A screen that never played something leaves the player alone.
      */
     fun leaveScreen(playedHere: Boolean) {
         leaveScope.launch {
             val controller = amazonController()
             val stop = LeaveScreen.shouldStop(playedHere, controller != null)
             DebugLog.log(
-                "leave", "leave screen: stop + unmute",
+                "leave", "leave screen: stop",
                 mapOf("playedHere" to playedHere, "stopping" to stop, "session" to controller?.let { describe(it) },
                     "songEnded" to endGuard.songEnded.value, "stopped" to stoppedByUser)
             )
@@ -1034,14 +1001,14 @@ class ConnectorRepository @Inject constructor(
                 DebugLog.log("leave", "stop failed", mapOf("error" to e))
             }
             endGuard.disarm("screen left")
-            StreamMute.unmute(context, "screen left")
+            VolumeDuck.restore(context, "screen left")
         }
     }
 
     /**
      * "Play again". If the player is still on the requested song: null, the caller seeks to the start offset
      * and plays. If its queue went on to another song (or the session is gone): the whole play path for the
-     * stored song again (stop, mute, load, pause, seek, play, unmute). A failure or "nothing to play" is the answer.
+     * stored song again (stop, load, pause, seek, play). A failure or "nothing to play" is the answer.
      */
     private suspend fun restart(): Result<PlayerPosition>? {
         val last = lastRequested
@@ -1050,7 +1017,7 @@ class ConnectorRepository @Inject constructor(
             hasLastRequest = last != null,
             hasSession = controller != null,
             sameSong = controller != null && onRequestedSong(controller),
-            songEnded = endGuard.songEnded.value
+            songEnded = endGuard.songEnded.value || atEndOfSong(controller)
         )
         DebugLog.log("control", "restart decides: $action", mapOf("session" to controller?.let { describe(it) }))
         return when (action) {
@@ -1060,12 +1027,11 @@ class ConnectorRepository @Inject constructor(
         }
     }
 
-    /** The whole start sequence for the song of the card: stop-confirm, mute, load, pause, seek, play, unmute. */
+    /** The whole start sequence for the song of the card: stop-confirm, load, pause, seek, play. */
     private suspend fun replayStoredSong(song: LastSong?): Result<PlayerPosition> {
         if (song == null) return Result.failure(Exception("Nothing to play again."))
         stopAndConfirm()
-        muteForNewSong()
-        val result = play(song.title, song.artist, song.year, song.card)
+        val result = play(song.title, song.artist, song.year, song.card, song.amazonId)
         val now = amazonController()
         return if (result.isSuccess && now != null) Result.success(snapshot(now)) else Result.failure(
             result.exceptionOrNull() ?: Exception("Amazon Music did not play the song.")
@@ -1084,7 +1050,7 @@ class ConnectorRepository @Inject constructor(
             hasLastRequest = last != null,
             hasSession = controller != null,
             sameSong = controller != null && onRequestedSong(controller),
-            songEnded = endGuard.songEnded.value,
+            songEnded = endGuard.songEnded.value || atEndOfSong(controller),
             stopped = stoppedByUser
         )
         return when (decision) {
@@ -1100,7 +1066,7 @@ class ConnectorRepository @Inject constructor(
 
     /**
      * Moves the playhead of the song: "back10", "forward10", "restart" (back to the start
-     * offset, plays), "stop" (pauses), "seek" (to a position in seconds) or "state" (changes
+     * offset, plays), "stop" (pauses and rewinds to the start offset), "seek" (to a position in seconds) or "state" (changes
      * nothing). Answers where the song is. The pause at the end of the song is done by
      * [EndGuard], which does not depend on this call.
      */
@@ -1140,7 +1106,7 @@ class ConnectorRepository @Inject constructor(
                         ctl(controller, "play", null) { it.transportControls.play() }
                     }
                     "pause" -> {
-                        // by hand: the position stays, the guard stays armed, nothing is unmuted
+                        // by hand: the position stays, the guard stays armed
                         DebugLog.log("control", "control pause", mapOf("positionS" to now.position))
                         ctl(controller, "pause", null) { it.transportControls.pause() }
                     }
@@ -1154,10 +1120,9 @@ class ConnectorRepository @Inject constructor(
                         ctl(controller, "play", null) { it.transportControls.play() }
                     }
                     "stop" -> {
-                        // pause AND back to the start offset, the guard is disarmed, an end mute of ours is undone
+                        // pause AND back to the start offset, the guard is disarmed
                         endGuard.disarm("user stop")
                         val (from, rewoundTo) = pauseAndRewind(controller)
-                        StreamMute.unmute(context, "user stop")
                         stoppedByUser = true
                         DebugLog.log(
                             "control", "control stop (paused, rewound)",
@@ -1165,7 +1130,7 @@ class ConnectorRepository @Inject constructor(
                         )
                     }
                     "seek" -> seek(position ?: return@withContext Result.failure(Exception("position is required.")))
-                    "state" -> Unit // only reads, the mute at the end is done by the guard
+                    "state" -> Unit // only reads, the pause at the end is done by the guard
                     else -> return@withContext Result.failure(Exception("Unknown action: $action"))
                 }
                 // the playhead moved or the song plays again: the guard watches the new situation
@@ -1178,7 +1143,7 @@ class ConnectorRepository @Inject constructor(
                 }
                 if (action == "state") {
                     val after = snapshot(controller)
-                    // the song ended (its sound is off since its last second): nothing plays for the screen
+                    // the song ended (paused in its last second): nothing plays for the screen
                     return@withContext Result.success(if (endGuard.songEnded.value) after.copy(playing = false) else after)
                 }
                 // the session reports the new position a moment later
@@ -1191,69 +1156,4 @@ class ConnectorRepository @Inject constructor(
                 Result.failure(Exception("Amazon Music does not react: ${e.message}"))
             }
         }
-
-    // ── diagnostics ───────────────────────────────────────────────────────────────
-
-    /**
-     * One run of everything the debug log can show, for a fixed test song: the Amazon packages,
-     * the components of Amazon Music that handle media actions, and the play probe.
-     */
-    suspend fun diagnostics() = withContext(Dispatchers.IO) {
-        val pm = context.packageManager
-        DebugLog.log("diag", "start", mapOf("notificationAccess" to hasNotificationAccess()))
-        try {
-            val amazon = pm.getInstalledPackages(0).filter { it.packageName.contains("amazon", ignoreCase = true) }
-                .map { mapOf("package" to it.packageName, "versionName" to it.versionName) }
-            DebugLog.log("diag", "installed packages with amazon in the name", mapOf("packages" to amazon))
-        } catch (e: Exception) {
-            DebugLog.log("diag", "package list failed", mapOf("error" to e))
-        }
-        try {
-            @Suppress("DEPRECATION")
-            val info = pm.getPackageInfo(
-                AMAZON_MUSIC,
-                PackageManager.GET_ACTIVITIES or PackageManager.GET_SERVICES or PackageManager.GET_RECEIVERS
-            )
-            fun chunks(kind: String, items: List<String>) =
-                items.chunked(40).forEachIndexed { i, part ->
-                    DebugLog.log("diag", "exported $kind (${i + 1})", mapOf("items" to part))
-                }
-            chunks("activities", info.activities.orEmpty().filter { it.exported }.map { "${it.name} enabled=${it.enabled}" })
-            chunks("services", info.services.orEmpty().filter { it.exported }.map { "${it.name} enabled=${it.enabled} permission=${it.permission}" })
-            chunks("receivers", info.receivers.orEmpty().filter { it.exported }.map { "${it.name} enabled=${it.enabled}" })
-        } catch (e: Exception) {
-            DebugLog.log("diag", "components of $AMAZON_MUSIC failed", mapOf("error" to e))
-        }
-        val actions = listOf(
-            MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH, "android.media.action.MEDIA_SEARCH",
-            Intent.ACTION_SEARCH, Intent.ACTION_MEDIA_BUTTON,
-            Intent.ACTION_VIEW, Intent.ACTION_MAIN, "com.google.android.gms.actions.SEARCH_ACTION"
-        )
-        for (action in actions) {
-            val intent = Intent(action).setPackage(AMAZON_MUSIC)
-            if (action == Intent.ACTION_VIEW) intent.data = Uri.parse("https://music.amazon.com/search/test")
-            if (action == Intent.ACTION_MAIN) intent.addCategory(Intent.CATEGORY_LAUNCHER)
-            try {
-                DebugLog.log(
-                    "diag", "who handles $action in $AMAZON_MUSIC",
-                    mapOf(
-                        "activities" to pm.queryIntentActivities(intent, 0).map { "${it.activityInfo.name} exported=${it.activityInfo.exported}" },
-                        "services" to pm.queryIntentServices(intent, 0).map { "${it.serviceInfo.name} exported=${it.serviceInfo.exported}" },
-                        "receivers" to pm.queryBroadcastReceivers(intent, 0).map { "${it.activityInfo.name} exported=${it.activityInfo.exported}" }
-                    )
-                )
-            } catch (e: Exception) {
-                DebugLog.log("diag", "query for $action failed", mapOf("error" to e))
-            }
-        }
-        DebugLog.log("diag", "sessions now", mapOf("sessions" to describeSessions()))
-        val result = play("Blue Monday", "New Order", null, null)
-        DebugLog.log("diag", "play probe finished", mapOf("ok" to result.isSuccess, "error" to result.exceptionOrNull()?.message))
-        if (result.isSuccess) {
-            delay(3000)
-            control("stop")
-        }
-        DebugLog.log("diag", "done")
-        DebugLog.flush()
-    }
 }

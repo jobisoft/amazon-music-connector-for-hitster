@@ -3,7 +3,6 @@ package de.jobisoft.hitsterconnector.ui.viewmodel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.jobisoft.hitsterconnector.data.local.CardSetNames
-import de.jobisoft.hitsterconnector.data.local.ConfigDataStore
 import de.jobisoft.hitsterconnector.data.repository.CSVRepository
 import de.jobisoft.hitsterconnector.data.repository.ConnectorRepository
 import de.jobisoft.hitsterconnector.domain.model.SongMapping
@@ -21,7 +20,6 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class GameViewModel @Inject constructor(
-    private val configDataStore: ConfigDataStore,
     private val csvRepository: CSVRepository,
     private val cardSetNames: CardSetNames,
     connectorRepository: ConnectorRepository,
@@ -73,7 +71,7 @@ class GameViewModel @Inject constructor(
             val csvResult = csvRepository.getSongFromCSV(csvInfo.csvFileName, csvInfo.index)
             val song = csvResult.getOrNull()
             return when {
-                song != null -> Lookup(SongMapping(url, song.title, song.artist, song.year), csvInfo.csvFileName, null, csvInfo.index)
+                song != null -> Lookup(SongMapping(url, song.title, song.artist, song.year, amazonId = song.amazonId), csvInfo.csvFileName, null, csvInfo.index)
                 // The card number and the file name tell no song, so they are fine to show.
                 csvResult.isSuccess -> Lookup(
                     null, null,
@@ -87,16 +85,6 @@ class GameViewModel @Inject constructor(
             }
         }
 
-        // Fallback for URL based CSV files (for example YouTube links in a column).
-        for (csvUrl in configDataStore.getCsvUrls()) {
-            val song = csvRepository.getSongByUrl(csvUrl, url).getOrNull()
-            if (song != null) {
-                return Lookup(
-                    SongMapping(url, song.title, song.artist, song.year),
-                    csvUrl.substringBefore('?').substringAfterLast('/'), null
-                )
-            }
-        }
         return Lookup(null, null, "This app does not know this QR code: $url")
     }
 }

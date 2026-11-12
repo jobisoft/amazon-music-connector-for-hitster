@@ -121,9 +121,8 @@ class QuizViewModel @Inject constructor(
     }
 
     /**
-     * The guard has muted the song of this quiz for its end (one second before it, no pause): the next
-     * card, as after a tap on the button. The stop of the last second is confirmed first, the mute stays
-     * on until the new song has jumped to its start offset. An end of another song, a second report of
+     * The guard reports the end of the song of this quiz: the next card, as after a
+     * tap on the button. The stop of the song is confirmed first. An end of another song, a second report of
      * the same end and one during a request do nothing.
      */
     private fun onSongEnded(event: EndEvent) {
@@ -141,7 +140,7 @@ class QuizViewModel @Inject constructor(
             DebugLog.log("quiz", "quiz auto-next held back by the report overlay")
             return
         }
-        DebugLog.log("quiz", "quiz auto-next (end muted)", mapOf("reason" to event.reason))
+        DebugLog.log("quiz", "quiz auto-next (end)", mapOf("reason" to event.reason))
         playNextRandom()
     }
 
@@ -163,7 +162,7 @@ class QuizViewModel @Inject constructor(
         cardSerial++
         currentTitle = song.title
         send(
-            SongMapping(url = card.setFile + "#" + song.index, title = song.title, artist = song.artist, year = song.year),
+            SongMapping(url = card.setFile + "#" + song.index, title = song.title, artist = song.artist, year = song.year, amazonId = song.amazonId),
             setName = cardSetNames.displayName(card.setFile),
             isTestSong = false,
             warning = null,

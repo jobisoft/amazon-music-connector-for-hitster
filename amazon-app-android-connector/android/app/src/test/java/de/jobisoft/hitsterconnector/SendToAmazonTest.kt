@@ -33,6 +33,11 @@ class SendToAmazonTest {
     fun theStatusLineSaysWhatThePlayerDoes() {
         assertEquals("", SendToAmazon.statusLine(SendStatus.IDLE, songEnded = false))
         assertEquals("Sending card info to the Amazon Music app ...", SendToAmazon.statusLine(SendStatus.SENDING, false))
+        assertEquals(
+            "Sending card info to the Amazon Music app ...\nbuffering",
+            SendToAmazon.statusLine(SendStatus.SENDING, false, playStatus = "buffering")
+        )
+        assertEquals("a status after the send is not shown", "Playing", SendToAmazon.statusLine(SendStatus.PLAYING, false, playStatus = "searching"))
         assertEquals("Playing", SendToAmazon.statusLine(SendStatus.PLAYING, false))
         assertTrue(SendToAmazon.statusLine(SendStatus.PLAYING, songEnded = true).startsWith("Song ended"))
         assertEquals("an error is a red box, not a line", "", SendToAmazon.statusLine(SendStatus.FAILED, false))

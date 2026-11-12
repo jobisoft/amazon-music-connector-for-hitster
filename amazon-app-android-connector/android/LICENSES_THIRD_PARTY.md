@@ -8,16 +8,7 @@ The libraries below are the ones this application uses. The versions are the one
 
 ## Card data
 
-The card sets in `card-sets/assets/csv` (in the top folder of the repository) map each Hitster card number to a song. They are a snapshot of
-[songseeker-hitster-playlists](https://github.com/andygruber/songseeker-hitster-playlists)
-by Andreas Gruber, commit `26e338f99acb087f3123cd5da7a5831c5895d573`, MIT License.
-The license text is in `card-sets/assets/csv/LICENSE-songseeker-hitster-playlists.txt`.
-
-One file is not in that commit: `hitster-de-aaaa0075.csv` comes from the open pull request
-[#57](https://github.com/andygruber/songseeker-hitster-playlists/pull/57) ("Added some (all) sets
-missing"), commit `45cc07c5f75a144447d29634642f6930dc52f12f`. It has not been merged yet. It lists
-the cards from 308 down to 1. The app reads the card number from the column `Card#`, not from the
-row. Replace the file with the merged version when there is one.
+The card sets in `card-sets/assets/csv` map each Hitster card number to a song. They are based in part on [songseeker-hitster-playlists](https://github.com/andygruber/songseeker-hitster-playlists) by Andreas Gruber (MIT License, Copyright (c) 2024 Andreas Gruber). They differ from it in places and have additional columns, for example `AmazonID`. The license text is in `card-sets/assets/csv/LICENSE-songseeker-hitster-playlists.txt`.
 
 ---
 
@@ -36,7 +27,6 @@ The following libraries are licensed under the Apache License, Version 2.0:
 - **androidx.compose.material3:material3** (Compose BOM 2026.02.00)
 - **androidx.compose.material:material-icons-extended** (Compose BOM 2026.02.00)
 - **androidx.navigation:navigation-compose** (2.9.7)
-- **androidx.datastore:datastore-preferences** (1.2.0)
 - Copyright: The Android Open Source Project
 - License: Apache License 2.0
 - https://source.android.com/license
@@ -147,4 +137,4 @@ These licenses are fully compatible with the **MIT License** under which this fo
 
 ## Card set names
 
-`card-sets/assets/card_sets.csv` maps the file names of the bundled card sets to their display names. The 19 names are taken from the `Game` column of `playlists.csv` of [andygruber/songseeker-hitster-playlists](https://github.com/andygruber/songseeker-hitster-playlists), the name of `hitster-de-aaaa0075.csv` ("Hitster - Original") from the index of the pull request #57 of that project, which also delivered the card set. The playlists are MIT licensed, Copyright (c) 2024 Andreas Gruber. The license text is `card-sets/assets/csv/LICENSE-songseeker-hitster-playlists.txt`, the Open Source Licenses screen shows it.
+`card-sets/assets/card_sets.csv` maps the file names of the bundled card sets to their display names. The names are based in part on `playlists.csv` of the same project (MIT License, see above). The Open Source Licenses screen shows the license text.

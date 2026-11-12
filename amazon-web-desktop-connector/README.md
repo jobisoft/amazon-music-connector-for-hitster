@@ -16,7 +16,7 @@ Android app  --HTTP-->  helper app  --native messaging-->  Firefox add-on  -->  
 
 ## Status
 
-This was a first attempt and is not developed further for now. The add-on is not published in the Firefox Add-on Store. It works only as a temporary add-on, loaded as a debug install through `about:debugging` (Firefox forgets it when it closes). The Android app and the helper app are complete and work together with it, see the README of each folder for details.
+This was a first attempt and is not developed further for now. The add-on is not published in the Firefox Add-on Store. It works only as a temporary add-on, loaded as a debug install through `about:debugging` (Firefox forgets it when it closes). The Android app and the helper app work together with it, see the README of each folder for details.
 
 ## Build everything
 

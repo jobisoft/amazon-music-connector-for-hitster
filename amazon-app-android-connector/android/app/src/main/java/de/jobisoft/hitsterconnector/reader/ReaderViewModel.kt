@@ -25,7 +25,9 @@ data class ReaderCard(
     val year: Int?,
     val title: String,
     val artist: String,
-    val corrected: Boolean
+    val corrected: Boolean,
+    /** The Amazon track id from the card set, played first if there is one. */
+    val amazonId: String? = null
 )
 
 data class ReaderUiState(
@@ -44,6 +46,8 @@ data class ReaderUiState(
     val songEnded: Boolean = false,
     /** "Amazon played a different version: ..." or null. */
     val versionNote: String? = null,
+    /** The line of the play request under the sending text ("loading", "buffering" ...), null for none. */
+    val playStatus: String? = null,
     /** Why sending is not possible (Amazon Music missing, no notification access), null if it is. */
     val amazonProblem: String? = null
 )
@@ -86,12 +90,19 @@ class ReaderViewModel @Inject constructor(
             store.saved.collect { row ->
                 val shown = _state.value.card ?: return@collect
                 if (!ReportRefresh.isFor(shown.setFile, shown.number, row)) return@collect
-                val (year, title, artist) = ReportRefresh.values(shown.year, shown.title, shown.artist, row)
-                _state.value = _state.value.copy(card = shown.copy(year = year, title = title, artist = artist, corrected = true))
+                val v = ReportRefresh.values(shown.year, shown.title, shown.artist, shown.amazonId, row)
+                _state.value = _state.value.copy(
+                    card = shown.copy(year = v.year, title = v.title, artist = v.artist, amazonId = v.amazonId, corrected = true)
+                )
             }
         }
-        // the song ended (muted since its last second): the screen says so
+        // the song ended: the screen says so
         viewModelScope.launch { connectorRepository.songEnded.collect { e -> _state.value = _state.value.copy(songEnded = e) } }
+        viewModelScope.launch {
+            connectorRepository.playStatus.collect { status ->
+                if (_state.value.send == SendStatus.SENDING) _state.value = _state.value.copy(playStatus = status)
+            }
+        }
     }
 
     /** Look again whether Amazon Music is ready, for example after the user came back from the settings. */
@@ -103,24 +114,24 @@ class ReaderViewModel @Inject constructor(
 
     /**
      * "Send to Amazon Music app": the shown card (with the corrected title and artist, as shown) goes through
-     * the same play path as the game: stop of the song that plays and its confirmation, mute, load, pause,
-     * seek to the start offset, play, unmute, the end guard armed. The user stays here and the card stays.
+     * the same play path as the game: stop of the song that plays and its confirmation, load, pause,
+     * seek to the start offset, play, the end guard armed. The user stays here and the card stays.
      */
     fun sendToAmazon() {
         val s = _state.value
         val card = s.card ?: return
         if (leaving || !SendToAmazon.enabled(true, s.amazonProblem, s.send)) return
         played = true
-        _state.value = s.copy(send = SendStatus.SENDING, sendError = null, versionNote = null)
+        _state.value = s.copy(send = SendStatus.SENDING, sendError = null, versionNote = null, playStatus = null)
         sendJob = viewModelScope.launch {
             connectorRepository.markScan()
             connectorRepository.stopAndConfirm()
             if (leaving) return@launch
-            connectorRepository.muteForNewSong()
-            val result = connectorRepository.play(card.title, card.artist, card.year, card.setFile + "#" + card.number)
+            val result = connectorRepository.play(card.title, card.artist, card.year, card.setFile + "#" + card.number, card.amazonId)
             if (leaving) return@launch
             _state.value = _state.value.copy(
                 send = if (result.isSuccess) SendStatus.PLAYING else SendStatus.FAILED,
+                playStatus = null,
                 versionNote = result.getOrNull()?.versionNote,
                 sendError = result.exceptionOrNull()?.message
             )
@@ -131,7 +142,7 @@ class ReaderViewModel @Inject constructor(
 
     /**
      * A new card was scanned: the song that "Send to Amazon Music app" started is stopped like with the Stop
-     * button (pause and back to the start offset, guard disarmed, stream unmuted), the status line is cleared and
+     * button (pause and back to the start offset, guard disarmed), the status line is cleared and
      * the button is usable again. A send under way is cancelled first. Nothing was sent from here: nothing happens.
      */
     private fun stopSongOfTheButton() {
@@ -140,12 +151,12 @@ class ReaderViewModel @Inject constructor(
         sendJob?.cancel()
         sendJob = null
         connectorRepository.leaveScreen(playedHere = true)
-        _state.value = s.copy(send = SendStatus.IDLE, sendError = null, versionNote = null, songEnded = false)
+        _state.value = s.copy(send = SendStatus.IDLE, sendError = null, versionNote = null, songEnded = false, playStatus = null)
     }
 
     /**
      * The reader is left (the Back button, the system back, the screen destroyed): the song is stopped (pause and
-     * rewind), the end guard disarmed, the music stream unmuted, like on the control screen. Once.
+     * rewind) and the end guard disarmed, like on the control screen. Once.
      */
     fun leave() {
         if (leaving) return
@@ -185,7 +196,7 @@ class ReaderViewModel @Inject constructor(
                 song != null -> {
                     val card = ReaderCard(
                         mine, info.csvFileName, cardSetNames.displayName(info.csvFileName), info.index,
-                        song.year, song.title, song.artist, song.corrected
+                        song.year, song.title, song.artist, song.corrected, song.amazonId
                     )
                     show(mine, card, null)
                     DebugLog.log(

@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import de.jobisoft.hitsterconnector.ui.screens.AboutScreen
+import de.jobisoft.hitsterconnector.ui.screens.OptionsScreen
 import de.jobisoft.hitsterconnector.ui.screens.CardConfigScreen
 import de.jobisoft.hitsterconnector.ui.screens.CSVPreviewScreen
 import de.jobisoft.hitsterconnector.ui.screens.HelpScreen
@@ -30,6 +31,7 @@ sealed class Screen(val route: String) {
         /** The files comma-joined and Uri-encoded, or the value "all". */
         fun createRoute(files: List<String>) = "quiz/" + Uri.encode(files.joinToString(","))
     }
+    object Options : Screen("options")
     object Help : Screen("help")
     object Licenses : Screen("licenses")
     object About : Screen("about")
@@ -49,6 +51,7 @@ fun AppNavigation(
                 onNavigateToScanner = { navController.navigate(Screen.Scanner.route) },
                 onNavigateToQuiz = { navController.navigate(Screen.QuizSets.route) },
                 onNavigateToReader = { navController.navigate(READER_ROUTE) },
+                onNavigateToOptions = { navController.navigate(Screen.Options.route) },
                 onNavigateToHelp = { navController.navigate(Screen.Help.route) },
                 onNavigateToLicenses = { navController.navigate(Screen.Licenses.route) },
                 onNavigateToAbout = { navController.navigate(Screen.About.route) }
@@ -101,6 +104,12 @@ fun AppNavigation(
         }
 
         readerRoute(navController) // the reader route, in every build
+
+        composable(Screen.Options.route) {
+            OptionsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
 
         composable(Screen.Help.route) {
             HelpScreen(

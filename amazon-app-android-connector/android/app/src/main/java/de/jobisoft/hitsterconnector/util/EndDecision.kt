@@ -1,70 +1,63 @@
 package de.jobisoft.hitsterconnector.util
 
-/** When does the song get muted for its end? */
+import android.media.session.PlaybackState
+
+/** Where does the end of a song begin, and when is it too short to have one? */
 object EndDecision {
+    /**
+     * The end zone: the last seconds of a song. The song is paused when its playhead reaches it, and
+     * nothing is allowed to play inside it. Change this one value to move the pause.
+     */
+    const val END_ZONE_S = 1.0f
+
     /** A length below this counts as unknown, then the end is not guessed. */
     const val MIN_DURATION_S = 3f
 
     /**
-     * True once, one second (the window) before the true end of a song that plays. No pause, only the mute.
-     * Not when it was done already for this song, not when the player is paused, not without a known length.
+     * Amazon may move on (another queue item, or a stop) a little before the timer of the end runs out. A
+     * switch or a stop within the last seconds of the song is its end as well.
      */
-    fun shouldMuteAtEnd(alreadyMuted: Boolean, playing: Boolean, durationS: Float, positionS: Float, windowS: Float): Boolean =
-        !alreadyMuted && playing && durationS >= MIN_DURATION_S && durationS - positionS <= windowS
+    const val SWITCH_END_WINDOW_S = 5.0f
+
+    /**
+     * A song that was paused for its end counts as not ended any more once the playhead is this far in
+     * front of the end zone (someone moved it back). Inside this margin a pause that landed a little
+     * early does not undo itself.
+     */
+    const val REARM_MARGIN_S = 1.0f
+
+    /** True if the playhead is in the end zone of a song with a known length. */
+    fun inEndZone(positionS: Float, durationS: Float): Boolean =
+        durationS >= MIN_DURATION_S && positionS >= durationS - END_ZONE_S
 }
 
-enum class MutePhase {
-    /** From before the request until the new song plays at its start offset. */
-    LOAD,
-
-    /** From one second before the end of a song until the next card has jumped to its start offset. */
-    END
-}
-
-/** How long a mute of ours may last at the most, the timer unmutes by itself. */
-object MuteHold {
-    const val LOAD_MS = 12_000L
-    const val END_MS = 30 * 60_000L
-
-    fun holdMs(phase: MutePhase): Long = if (phase == MutePhase.LOAD) LOAD_MS else END_MS
-}
-
-/**
- * The state of the end guard without Android, to test what it must and must not do. The one rule:
- * **the guard never disarms itself**, not after the end either.
- */
-class GuardModel {
-    var watching = false
-        private set
-    var endMuted = false
-        private set
-    var songEnded = false
-        private set
-
-    /** Starts watching a song (or starts again after a seek). Returns true if the song had been muted for its end. */
-    fun arm(): Boolean {
-        val wasEndMuted = endMuted
-        watching = true
-        endMuted = false
-        songEnded = false
-        return wasEndMuted
+/** When has a running song to be paused for its end? Pure, so the timer arithmetic is tested. */
+object EndPlanner {
+    /**
+     * Milliseconds from [nowMs] until the playhead reaches the end zone, for a report taken from the session:
+     * the position [positionMs] was valid at [updatedAtMs] (same clock as [nowMs]) and moves with [speed].
+     * Null: no timer, because nothing plays, the speed is not positive, or the length is unknown or too short.
+     * Zero: the playhead is in the end zone already.
+     */
+    fun delayUntilPauseMs(
+        state: Int,
+        positionMs: Long,
+        updatedAtMs: Long,
+        speed: Float,
+        durationMs: Long,
+        nowMs: Long,
+        zoneS: Float = EndDecision.END_ZONE_S
+    ): Long? {
+        if (state != PlaybackState.STATE_PLAYING || speed <= 0f) return null
+        if (durationMs < (EndDecision.MIN_DURATION_S * 1000).toLong()) return null
+        val elapsed = if (updatedAtMs > 0) (nowMs - updatedAtMs).coerceAtLeast(0L) else 0L
+        val position = positionMs + elapsed * speed
+        val remaining = (durationMs - zoneS * 1000f - position) / speed
+        return if (remaining <= 0f) 0L else Math.ceil(remaining.toDouble()).toLong()
     }
 
-    /** A new request, an explicit stop, the screen left, the watch timeout. Returns false if nothing was watched. */
-    fun disarm(): Boolean {
-        if (!watching) return false
-        watching = false
-        endMuted = false
-        songEnded = false
-        return true
-    }
-
-    /** One look of the ticker. True: mute the stream now. The model stays watching. */
-    fun onTick(playing: Boolean, durationS: Float, positionS: Float, windowS: Float): Boolean {
-        if (!watching) return false
-        if (!EndDecision.shouldMuteAtEnd(endMuted, playing, durationS, positionS, windowS)) return false
-        endMuted = true
-        songEnded = true
-        return true
-    }
+    /** The same for a [SessionSnapshot]. */
+    fun delayUntilPauseMs(snapshot: SessionSnapshot, nowMs: Long): Long? = delayUntilPauseMs(
+        snapshot.state, snapshot.positionMs, snapshot.updatedAtMs, snapshot.speed, snapshot.durationMs, nowMs
+    )
 }

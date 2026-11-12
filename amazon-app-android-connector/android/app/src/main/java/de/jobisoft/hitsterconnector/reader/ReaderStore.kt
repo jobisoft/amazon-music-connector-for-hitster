@@ -73,12 +73,13 @@ class ReaderStore @Inject constructor(
      * calling thread, a line is small.
      */
     fun recordWrong(
-        setFile: String, card: Int, ourYear: Int?, ourTitle: String, ourArtist: String, edit: Edit, source: String
+        setFile: String, card: Int, ourYear: Int?, ourTitle: String, ourArtist: String, edit: Edit, source: String,
+        ourAmazonId: String? = null
     ): ResultRow {
         val time = timeFormat.format(Date())
         val row = ResultRow(
             time, setFile, card, Verdict.WRONG, ourYear, ourTitle, ourArtist,
-            edit.year, edit.title, edit.artist, source
+            edit.year, edit.title, edit.artist, source, ourAmazonId.orEmpty(), edit.amazonId
         )
         synchronized(rows) {
             rows.add(row)
@@ -90,7 +91,7 @@ class ReaderStore @Inject constructor(
                 DebugLog.log("reader", "reader results file failed", mapOf("error" to e))
             }
         }
-        overrides.add(CardOverride(setFile, card, edit.year, edit.title, edit.artist, time, source))
+        overrides.add(CardOverride(setFile, card, edit.year, edit.title, edit.artist, time, source, edit.amazonId))
         _saved.tryEmit(row)
         DebugLog.log("reader", "reader verdict", eventData(row))
         return row
@@ -102,6 +103,7 @@ class ReaderStore @Inject constructor(
         "ok" to false,
         "ourYear" to row.ourYear, "ourTitle" to ourTitle, "ourArtist" to ourArtist,
         "cardYear" to row.cardYear, "cardTitle" to row.cardTitle, "cardArtist" to row.cardArtist,
+        "ourAmazonId" to row.ourAmazonId, "cardAmazonId" to row.cardAmazonId,
         "changed" to ReaderLogic.changed(row), "source" to row.source,
         "yearOnCard" to row.cardYear, "title" to ourTitle, "artist" to ourArtist,
         "time" to row.time

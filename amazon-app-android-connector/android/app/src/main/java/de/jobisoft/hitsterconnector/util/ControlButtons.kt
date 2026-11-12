@@ -53,7 +53,7 @@ object LeaveScreen {
     /**
      * The song is stopped (paused and rewound) only if a request of this screen went out and Amazon
      * Music has a session. A screen that never played something leaves the player alone. The guard is
-     * disarmed and the mute undone in every case.
+     * disarmed in every case.
      */
     fun shouldStop(playedHere: Boolean, hasSession: Boolean): Boolean = playedHere && hasSession
 }

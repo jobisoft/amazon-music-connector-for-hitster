@@ -10,12 +10,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.ui.draw.alpha
+import de.jobisoft.hitsterconnector.util.StartPosition
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -25,7 +35,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import android.content.Intent
-import de.jobisoft.hitsterconnector.BuildConfig
 import android.provider.Settings
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
@@ -54,13 +63,13 @@ fun HomeScreen(
     onNavigateToScanner: () -> Unit,
     onNavigateToQuiz: () -> Unit,
     onNavigateToReader: () -> Unit,
+    onNavigateToOptions: () -> Unit,
     onNavigateToHelp: () -> Unit,
     onNavigateToLicenses: () -> Unit,
     onNavigateToAbout: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    val diagnostics by viewModel.diagnostics.collectAsState()
 
     // the crash of the last run, in every build, so that it can be copied or shared without adb
     val appContext = LocalContext.current
@@ -117,36 +126,39 @@ fun HomeScreen(
             // not tied to the Amazon Music setup: the reader needs none of it
             ModeButton("Reader Mode", enabled = true, onClick = onNavigateToReader)
 
-            // the second block: a larger gap above it, the same button style and spacing inside
+            // the options: a block of its own, the size of the buttons below, the tonal style
+            Spacer(modifier = Modifier.height(16.dp))
+            FilledTonalButton(
+                onClick = onNavigateToOptions,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.dp)
+            ) {
+                Text(text = "Options", style = MaterialTheme.typography.bodySmall)
+            }
+
+            // the last block: a larger gap above it, the same button style and spacing inside
             Spacer(modifier = Modifier.height(16.dp))
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val secondary = mutableListOf(
+                val secondary = listOf(
                     "Card Config" to onNavigateToCardConfig,
                     "Help" to onNavigateToHelp,
                     "Open Source Licenses" to onNavigateToLicenses,
                     "About" to onNavigateToAbout
                 )
-                // debug build only, the production build has no debug channel
-                if (BuildConfig.DEBUG_CHANNEL) {
-                    secondary.add("Send diagnostics" to viewModel::sendDiagnostics)
-                }
                 for ((label, action) in secondary) {
                     OutlinedButton(
                         onClick = action,
-                        enabled = label != "Send diagnostics" || diagnostics != "running ...",
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(40.dp)
                     ) {
                         Text(text = label, style = MaterialTheme.typography.bodySmall)
                     }
-                }
-                diagnostics?.takeIf { BuildConfig.DEBUG_CHANNEL }?.let {
-                    Text(it, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 }
             }
         }

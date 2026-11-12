@@ -7,20 +7,21 @@ Reads the log of debug_sink.py (default: debug.log next to this script), one JSO
 looks at the events of the reader mode:
 
   reader verdict   one answer, sent when it was given
-  reader dump      the same rows again
-  reader card      a scan (only used for the title and the artist)
+  reader dump      read like a verdict
+  other reader events are ignored
 
 Per card the LATEST answer counts (a skipped card is no answer). A "wrong" answer carries what the card
-says: cardYear, cardTitle, cardArtist (all three, the unchanged ones equal ours). The mismatches go to
-reader_mismatches.csv with all three pairs and a column `changed` that lists which of year, title and
-artist differ:
+says: cardYear, cardTitle, cardArtist and cardAmazonId (all four, the unchanged ones equal ours). The
+mismatches go to reader_mismatches.csv with all four pairs and a column `changed` that lists which of year,
+title, artist and amazonId differ:
 
-  set, card, ourYear, cardYear, ourTitle, cardTitle, ourArtist, cardArtist, changed, source
+  set, card, ourYear, cardYear, ourTitle, cardTitle, ourArtist, cardArtist, ourAmazonId, cardAmazonId, changed, source
 
 `source` says where the answer came from: reader (the reader mode), scan or quiz (the "Report as wrong"
 button of the game). Events without it are from the reader.
 
-Events with a year only (yearOnCard, title, artist) can differ in the year only.
+Events with a year only (yearOnCard, title, artist) can differ in the year only. Events without the Amazon
+ids (ourAmazonId, cardAmazonId) are taken as unchanged in the id.
 """
 import csv
 import json
@@ -28,7 +29,8 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FIELDS = ["set", "card", "ourYear", "cardYear", "ourTitle", "cardTitle", "ourArtist", "cardArtist", "changed", "source"]
+FIELDS = ["set", "card", "ourYear", "cardYear", "ourTitle", "cardTitle", "ourArtist", "cardArtist",
+          "ourAmazonId", "cardAmazonId", "changed", "source"]
 
 
 def read_events(path):
@@ -46,7 +48,7 @@ def read_events(path):
 
 
 def normalize(data):
-    """One answer in the new field names, whichever version of the app sent it."""
+    """One answer with all field names filled, also when the event has only the short names."""
     our_title = data.get("ourTitle") or data.get("title") or ""
     our_artist = data.get("ourArtist") or data.get("artist") or ""
     card_year = data.get("cardYear", data.get("yearOnCard"))
@@ -58,15 +60,18 @@ def normalize(data):
         "ourTitle": our_title,
         "ourArtist": our_artist,
         "cardYear": card_year,
-        # the first version knew no title and artist of the card: they are taken as unchanged
+        # an event without title and artist of the card says nothing about them: unchanged
         "cardTitle": data.get("cardTitle") if data.get("cardTitle") is not None else our_title,
         "cardArtist": data.get("cardArtist") if data.get("cardArtist") is not None else our_artist,
+        "ourAmazonId": data.get("ourAmazonId") or "",
+        # an event without the id of the card says nothing about it: unchanged
+        "cardAmazonId": data["cardAmazonId"] if data.get("cardAmazonId") is not None else (data.get("ourAmazonId") or ""),
         "source": data.get("source") or "reader",
     }
 
 
 def changed(answer):
-    """Which of year, title and artist the card says differently, for a wrong answer."""
+    """Which of year, title, artist and amazonId the card says differently, for a wrong answer."""
     if answer["verdict"] != "wrong":
         return []
     result = []
@@ -76,6 +81,8 @@ def changed(answer):
         result.append("title")
     if (answer["cardArtist"] or "").strip() != (answer["ourArtist"] or "").strip():
         result.append("artist")
+    if (answer["cardAmazonId"] or "").strip() != (answer["ourAmazonId"] or "").strip():
+        result.append("amazonId")
     return result
 
 
@@ -139,6 +146,8 @@ def main():
             print("      title:  %s -> %s" % (m["ourTitle"], m["cardTitle"]))
         if "artist" in m["changed"]:
             print("      artist: %s -> %s" % (m["ourArtist"], m["cardArtist"]))
+        if "amazonId" in m["changed"]:
+            print("      amazon: %s -> %s" % (m["ourAmazonId"] or "(none)", m["cardAmazonId"] or "(none)"))
     with open(out, "w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=FIELDS)
         w.writeheader()

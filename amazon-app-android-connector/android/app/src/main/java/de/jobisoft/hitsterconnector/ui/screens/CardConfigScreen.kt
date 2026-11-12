@@ -6,11 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -19,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import de.jobisoft.hitsterconnector.ui.components.BackButton
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.core.net.toUri
 import android.content.Intent
 import androidx.compose.ui.unit.dp
@@ -56,7 +51,7 @@ fun CardConfigScreen(
                 .padding(paddingValues)
         ) {
             Text(
-                text = "The app supports the CSV format of SongSeeker. Card sets can be downloaded in the SongSeeker repository and imported here.",
+                text = "The app supports the CSV format of SongSeeker. Card sets can be downloaded from the project repositories below and imported here.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -64,10 +59,20 @@ fun CardConfigScreen(
             OutlinedButton(
                 onClick = {
                     context.startActivity(
-                        Intent(Intent.ACTION_VIEW, "https://github.com/andygruber/songseeker-hitster-playlists".toUri())
+                        Intent(Intent.ACTION_VIEW, "https://github.com/jobisoft/amazon-music-connector-for-hitster".toUri())
                     )
                 },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+            ) {
+                Text("This project on GitHub")
+            }
+            OutlinedButton(
+                onClick = {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, "https://github.com/andygruber/songseeker-hitster-playlists".toUri())
+                    )
+                },
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp)
             ) {
                 Text("SongSeeker playlists on GitHub")
             }

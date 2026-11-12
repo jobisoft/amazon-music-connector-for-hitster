@@ -1,11 +1,7 @@
 package de.jobisoft.hitsterconnector.ui.screens
 
-import android.Manifest
 import android.app.Activity
-import android.content.pm.PackageManager
 import android.view.WindowManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,17 +28,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,7 +50,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import de.jobisoft.hitsterconnector.ui.components.BackButton
 import de.jobisoft.hitsterconnector.ui.components.SongTexts
 import de.jobisoft.hitsterconnector.ui.viewmodel.SendState
@@ -69,13 +59,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import de.jobisoft.hitsterconnector.ui.ReportCard
 import de.jobisoft.hitsterconnector.ui.ReportWrongSection
 import de.jobisoft.hitsterconnector.ui.viewmodel.GameUiState
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import de.jobisoft.hitsterconnector.util.ControlAction
 import de.jobisoft.hitsterconnector.util.ControlButtons
+import de.jobisoft.hitsterconnector.util.HideStatusBarSetting
 import de.jobisoft.hitsterconnector.ui.viewmodel.SongInfo
 
 /** Keeps the screen on while a card is being handled. */
@@ -91,6 +84,32 @@ internal fun KeepScreenOn(active: Boolean) {
         }
         onDispose {
             window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+}
+
+/**
+ * Hides the status bar while a card song is on the screen ([songOnScreen]) and the switch "Hide the status bar while
+ * playing" on the Options screen is on. Some phones show the title of the song in the status bar, which would give the card
+ * away. A swipe from the top shows the bar for a moment. The bar comes back when the screen is left. The navigation bar
+ * stays as it is.
+ */
+@Composable
+internal fun HideStatusBar(songOnScreen: Boolean) {
+    val context = LocalContext.current
+    val enabled = remember { HideStatusBarSetting.isEnabled(context) }
+    val hide = HideStatusBarSetting.shouldHide(enabled, songOnScreen)
+    DisposableEffect(hide) {
+        val window = (context as? Activity)?.window
+        val controller = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
+        if (hide) {
+            controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller?.hide(WindowInsetsCompat.Type.statusBars())
+        } else {
+            controller?.show(WindowInsetsCompat.Type.statusBars())
+        }
+        onDispose {
+            controller?.show(WindowInsetsCompat.Type.statusBars())
         }
     }
 }
@@ -118,7 +137,8 @@ internal fun ResultView(
     onControl: (String, Float?) -> Unit,
     onToggleReveal: () -> Unit,
     onNext: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onCancel: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -133,6 +153,20 @@ internal fun ResultView(
                 CircularProgressIndicator()
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Sending card info to the Amazon Music app ...", style = MaterialTheme.typography.titleMedium)
+                if (state.status != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        state.status,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1
+                    )
+                }
+                if (state.canCancel) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    OutlinedButton(onClick = onCancel) { Text("Cancel") }
+                }
             }
 
             SendState.SUCCESS -> {
@@ -175,7 +209,7 @@ internal fun ResultView(
                 if (state.songEnded) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Sound is muted until the next card",
+                        "The song ended",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -192,7 +226,7 @@ internal fun ResultView(
                     val ref = state.cardRef
                     if (ref != null && !state.isTestSong) {
                         ReportWrongSection(
-                            ReportCard(state.cardSerial, ref.setFile, ref.number, state.song.year, state.song.title, state.song.artist),
+                            ReportCard(state.cardSerial, ref.setFile, ref.number, state.song.year, state.song.title, state.song.artist, state.song.amazonId),
                             state.revealed, reportSource
                         )
                     }

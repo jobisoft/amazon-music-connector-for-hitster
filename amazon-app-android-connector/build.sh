@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build the Android app (plays through the Amazon Music app).
 #
-#   ./build.sh          debug build (debug channel, "Send diagnostics"), dist/Amazon-Music-Connector-for-Hitster-1.0.1-<stamp>-debug.apk
+#   ./build.sh          debug build (debug channel), dist/Amazon-Music-Connector-for-Hitster-1.0.1-<stamp>-debug.apk
 #   ./build.sh --prod   production build (R8, no debug channel), dist/Amazon-Music-Connector-for-Hitster-1.0.1-<stamp>-prod.apk
 #
 # The debug APK in dist/ stays where it is when you build the production one, and the other way round.

@@ -14,10 +14,10 @@ class ReaderLogicTest {
     private val file = "hitster-de-aaaa0075.csv"
 
     private fun row(card: Int, our: Int? = 2000, onCard: Int? = 1984, time: String = "2026-11-09T10:00:00") =
-        ResultRow(time, file, card, Verdict.WRONG, our, "Our Title", "Our Artist", onCard, "Our Title", "Our Artist")
+        ResultRow(time, file, card, Verdict.WRONG, our, "Our Title", "Our Artist", onCard, "Our Title", "Our Artist", ourAmazonId = "", cardAmazonId = "")
 
     private fun wrongRow(year: Int?, title: String?, artist: String?) =
-        ResultRow("t", file, 1, Verdict.WRONG, 2000, "Our Title", "Our Artist", year, title, artist)
+        ResultRow("t", file, 1, Verdict.WRONG, 2000, "Our Title", "Our Artist", year, title, artist, ourAmazonId = "", cardAmazonId = "")
 
     // ── the year on the card ───────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ class ReaderLogicTest {
             assertEquals(r, ReaderLogic.parseResultLine(ReaderLogic.resultLine(r)))
         }
         assertEquals(
-            "2026-11-09T10:00:00,$file,265,wrong,2008,Our Title,Our Artist,1984,Our Title,Our Artist,reader",
+            "2026-11-09T10:00:00,$file,265,wrong,2008,Our Title,Our Artist,1984,Our Title,Our Artist,reader,,",
             ReaderLogic.resultLine(row(265, 2008, 1984))
         )
     }
@@ -55,29 +55,54 @@ class ReaderLogicTest {
         val r = ResultRow(
             "2026-11-09T10:00:00", file, 126, Verdict.WRONG, 2004,
             "(I've Had) The Time of My Life - From \"Dirty Dancing\", Soundtrack", "Bill Medley, Jennifer Warnes",
-            1987, "The Time of My Life, \"Remastered\"", "Medley, Warnes & \"Friends\""
+            1987, "The Time of My Life, \"Remastered\"", "Medley, Warnes & \"Friends\"",
+            ourAmazonId = "", cardAmazonId = ""
         )
         val line = ReaderLogic.resultLine(r)
-        assertEquals(11, ReaderLogic.parseCsvLine(line).size)
+        assertEquals(13, ReaderLogic.parseCsvLine(line).size)
         assertEquals(r, ReaderLogic.parseResultLine(line))
     }
 
     @Test
-    fun theSourceGoesThereAndBackAndOldRowsAreFromTheReader() {
+    fun theSourceGoesThereAndBackAndRowsWithoutOneAreFromTheReader() {
         for (source in listOf("reader", "scan", "quiz")) {
             val r = row(265).copy(source = source)
             assertEquals(source, ReaderLogic.parseResultLine(ReaderLogic.resultLine(r))!!.source)
         }
-        assertEquals("reader", ReaderLogic.parseResultLine("t,$file,5,wrong,2000,T,A,1999,T2,A2,0")!!.source) // 11 fields, old: suspect instead of source
-        assertEquals("quiz", ReaderLogic.parseResultLine("t,$file,5,wrong,2000,T,A,1999,T2,A2,0,quiz")!!.source) // 12 fields, old
-        assertEquals("scan", ReaderLogic.parseResultLine("t,$file,5,wrong,2000,T,A,1999,T2,A2,scan")!!.source) // 11 fields, current
-        assertEquals("reader", ReaderLogic.parseResultLine("t,$file,5,2000,wrong,1999,0")!!.source) // the first version
+        assertEquals("reader", ReaderLogic.parseResultLine("t,$file,5,wrong,2000,T,A,1999,T2,A2,0")!!.source) // 11 fields, the last one is a flag 0 or 1: reader
+        assertEquals("quiz", ReaderLogic.parseResultLine("t,$file,5,wrong,2000,T,A,1999,T2,A2,0,quiz")!!.source) // 12 fields, source in the last one
+        assertEquals("scan", ReaderLogic.parseResultLine("t,$file,5,wrong,2000,T,A,1999,T2,A2,scan")!!.source) // 11 fields, source in the last one
+        assertEquals("reader", ReaderLogic.parseResultLine("t,$file,5,2000,wrong,1999,0")!!.source) // a row with only seven fields
         assertEquals("reader", ReaderLogic.parseResultLine("t,$file,5,wrong,2000,T,A,1999,T2,A2,0,")!!.source) // empty field
-        assertTrue(ReaderLogic.RESULT_HEADER.endsWith(",cardArtist,source"))
+        assertTrue(ReaderLogic.RESULT_HEADER.endsWith(",cardArtist,source,ourAmazonId,cardAmazonId"))
     }
 
     @Test
-    fun rowsOfTheFirstVersionAreStillRead() {
+    fun theAmazonIdsGoThereAndBackAtTheEndOfTheLine() {
+        val r = row(103, 2006, 2006).copy(source = "scan", ourAmazonId = "", cardAmazonId = "B006LSV05O")
+        val line = ReaderLogic.resultLine(r)
+        assertTrue(line.endsWith(",scan,,B006LSV05O"))
+        assertEquals(r, ReaderLogic.parseResultLine(line))
+        val cleared = row(103, 2006, 2006).copy(ourAmazonId = "B006LSV05O", cardAmazonId = "")
+        assertEquals(cleared, ReaderLogic.parseResultLine(ReaderLogic.resultLine(cleared)))
+    }
+
+    @Test
+    fun rowsWithoutTheAmazonIdsAreStillRead() {
+        val r11 = ReaderLogic.parseResultLine("t,$file,5,wrong,2000,T,A,1999,T2,A2,scan")!!
+        assertNull(r11.ourAmazonId)
+        assertNull(r11.cardAmazonId)
+        assertEquals("scan", r11.source)
+        val r12 = ReaderLogic.parseResultLine("t,$file,5,wrong,2000,T,A,1999,T2,A2,0,quiz")!!
+        assertNull(r12.cardAmazonId)
+        assertEquals("quiz", r12.source)
+        assertEquals("a row without the ids has nothing to say about the id", listOf("year", "title", "artist"), ReaderLogic.changed(r11))
+        val r7 = ReaderLogic.parseResultLine("t,$file,5,2000,wrong,1999,0")!!
+        assertNull(r7.cardAmazonId)
+    }
+
+    @Test
+    fun rowsWithSevenFieldsAreRead() {
         val old = ReaderLogic.parseResultLine("2026-11-08T09:00:00,$file,265,2008,wrong,1984,1")!!
         assertEquals(Verdict.WRONG, old.verdict)
         assertEquals(2008, old.ourYear)
@@ -88,10 +113,10 @@ class ReaderLogicTest {
     }
 
     @Test
-    fun rowsOfMatchAndSkippedFromOlderVersionsAreNotReportsAnyMore() {
+    fun rowsWithTheVerdictMatchOrSkippedAreNotReports() {
         assertNull(ReaderLogic.parseResultLine("t,$file,5,match,2000,T,A,,,,0,reader"))
         assertNull(ReaderLogic.parseResultLine("t,$file,5,skipped,2000,T,A,,,,0,reader"))
-        assertNull(ReaderLogic.parseResultLine("t,$file,5,2000,match,,0")) // the first version
+        assertNull(ReaderLogic.parseResultLine("t,$file,5,2000,match,,0")) // a row with only seven fields
         assertNull("there is no verdict match", Verdict.fromWire("match"))
         assertEquals(listOf("wrong"), Verdict.entries.map { it.wire })
     }
@@ -114,6 +139,16 @@ class ReaderLogicTest {
     }
 
     // ── what changed, and when Save is on ──────────────────────────────────────
+
+    @Test
+    fun theAmazonIdIsAChangedFieldWhenTheTwoDiffer() {
+        val base = wrongRow(2000, "Our Title", "Our Artist")
+        assertEquals(listOf("amazonId"), ReaderLogic.changed(base.copy(ourAmazonId = "", cardAmazonId = "B006LSV05O")))
+        assertEquals(listOf("amazonId"), ReaderLogic.changed(base.copy(ourAmazonId = "B006LSV05O", cardAmazonId = "")))
+        assertEquals(listOf("amazonId"), ReaderLogic.changed(base.copy(ourAmazonId = "B006LSV05O", cardAmazonId = "B00FU4OCDW")))
+        assertEquals(emptyList<String>(), ReaderLogic.changed(base.copy(ourAmazonId = "B006LSV05O", cardAmazonId = "B006LSV05O")))
+        assertEquals(listOf("year", "amazonId"), ReaderLogic.changed(wrongRow(1984, "Our Title", "Our Artist").copy(cardAmazonId = "B006LSV05O")))
+    }
 
     @Test
     fun theChangedFieldsAreTheOnesThatDiffer() {
@@ -147,6 +182,32 @@ class ReaderLogicTest {
         val e = edit("1984", "  Two\nLines  ", "Artist ")!! // trimmed and flattened to one line
         assertEquals("Two Lines", e.title)
         assertEquals("Artist", e.artist)
+    }
+
+    private fun editId(idText: String, ourId: String? = null) =
+        ReaderLogic.evaluateEdit("2000", "Our Title", "Our Artist", 2000, "Our Title", "Our Artist", 2026, idText, ourId)
+
+    @Test
+    fun theAmazonIdCanBeTheOnlyChangeAndIsTakenFromALinkToo() {
+        assertNull("nothing changed", editId("", null))
+        assertNull("the same id", editId("B006LSV05O", "B006LSV05O"))
+        assertNull("the same id as a link", editId("https://music.amazon.de/tracks/B006LSV05O?do=play", "B006LSV05O"))
+        assertEquals("B006LSV05O", editId("b006lsv05o", null)!!.amazonId)
+        assertEquals("B006LSV05O", editId("https://music.amazon.de/tracks/B006LSV05O?do=play", null)!!.amazonId)
+        assertEquals("clearing the id is a change", "", editId("", "B006LSV05O")!!.amazonId)
+        assertEquals("B00FU4OCDW", editId("B00FU4OCDW", "B006LSV05O")!!.amazonId)
+    }
+
+    @Test
+    fun saveStaysOffForTextThatIsNoAmazonId() {
+        assertNull(editId("not an id"))
+        assertNull(editId("B006LSV05"))
+        assertNull(editId("https://music.amazon.de/albums/B006LSUZVY"))
+        assertEquals("Not an Amazon track ID", ReaderLogic.amazonIdError("nope"))
+        assertNull(ReaderLogic.amazonIdError(""))
+        assertNull(ReaderLogic.amazonIdError("B006LSV05O"))
+        assertEquals("the id is saved together with the other values", 1984,
+            ReaderLogic.evaluateEdit("1984", "Our Title", "Our Artist", 2000, "Our Title", "Our Artist", 2026, "B006LSV05O", null)!!.year)
     }
 
     @Test

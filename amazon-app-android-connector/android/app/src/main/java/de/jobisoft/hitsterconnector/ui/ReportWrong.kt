@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,7 +51,7 @@ fun ReportWrongSection(card: ReportCard?, revealed: Boolean, source: String) {
     }
     if (open) {
         WrongDialog(
-            key = card.serial, ourYear = card.year, ourTitle = card.title, ourArtist = card.artist,
+            key = card.serial, ourYear = card.year, ourTitle = card.title, ourArtist = card.artist, ourAmazonId = card.amazonId,
             onSave = { edit ->
                 viewModel.report(card, edit, source)
                 reported = true

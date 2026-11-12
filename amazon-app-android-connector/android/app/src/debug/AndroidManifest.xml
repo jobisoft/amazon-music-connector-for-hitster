@@ -4,9 +4,6 @@
     <!-- debug build only: the debug channel posts to the log sink -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- debug build only (debug channel): list every package with "amazon" in its name -->
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
-
     <!-- debug build only: the log sink on the developer's PC speaks plain HTTP -->
     <application android:usesCleartextTraffic="true" />
 </manifest>

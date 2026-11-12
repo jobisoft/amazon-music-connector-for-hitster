@@ -27,6 +27,13 @@ def verdict(card, v, our_year=2000, card_year=None, our_title="T", our_artist="A
     return {"tag": "reader", "msg": msg, "data": data}
 
 
+def with_ids(event, our_id, card_id):
+    """The event with the two Amazon ids (ourAmazonId, cardAmazonId)."""
+    event["data"]["ourAmazonId"] = our_id
+    event["data"]["cardAmazonId"] = card_id
+    return event
+
+
 def run(events):
     d = tempfile.mkdtemp()
     log = os.path.join(d, "debug.log")
@@ -92,6 +99,21 @@ class ReaderSummaryTest(unittest.TestCase):
         self.assertEqual("Song", rows[0]["ourTitle"])
         self.assertEqual("Song", rows[0]["cardTitle"])  # unknown in the first version: unchanged
         self.assertEqual("1984", rows[0]["cardYear"])
+
+    def test_the_amazon_id_is_a_field_of_its_own_and_events_without_it_are_unchanged(self):
+        a = rs.normalize(with_ids(verdict(1, "wrong", 2000, 2000, "T", "A", "T", "A"), "", "B006LSV05O")["data"])
+        self.assertEqual(["amazonId"], rs.changed(a))
+        a = rs.normalize(with_ids(verdict(1, "wrong", 2000, 1984, "T", "A", "T", "A"), "B006LSV05O", "B006LSV05O")["data"])
+        self.assertEqual(["year"], rs.changed(a))
+        a = rs.normalize(with_ids(verdict(1, "wrong", 2000, 2000, "T", "A", "T", "A"), "B006LSV05O", "")["data"])
+        self.assertEqual(["amazonId"], rs.changed(a))
+        a = rs.normalize(verdict(1, "wrong", 2000, 1984, "T", "A", "T", "A")["data"])
+        self.assertEqual(["year"], rs.changed(a))
+        text, rows = run([with_ids(verdict(7, "wrong", 2000, 2000, "T", "A", "T", "A"), "", "B006LSV05O")])
+        self.assertEqual("amazonId", rows[0]["changed"])
+        self.assertEqual("", rows[0]["ourAmazonId"])
+        self.assertEqual("B006LSV05O", rows[0]["cardAmazonId"])
+        self.assertIn("amazon: (none) -> B006LSV05O", text)
 
     def test_the_source_of_the_answer_is_in_the_csv_and_old_events_are_from_the_reader(self):
         _, rows = run([

@@ -37,7 +37,7 @@ object RestartDecision {
 }
 
 /**
- * The switch detector, the main guard of a card song. It watches from the start of the song until the
+ * The switch detector, a guard of a card song. It watches from the start of the song until the
  * next request of the app, also after the song has ended: Amazon may go on to the next item of its
  * queue, and that item must not play. It pauses when the
  * session is on anything but the guarded song and plays (or buffers). Something that does not play is
@@ -46,13 +46,12 @@ object RestartDecision {
  */
 object SwitchDetector {
     fun shouldPause(
-        watching: Boolean,
         guardedId: String?,
         guardedTitle: String?,
         currentId: String?,
         currentTitle: String?,
         state: Int?
     ): Boolean =
-        watching && StopConfirm.needsStop(state) && (currentId != null || currentTitle != null) &&
+        StopConfirm.needsStop(state) && (currentId != null || currentTitle != null) &&
             !SongIdentity.same(guardedId, guardedTitle, currentId, currentTitle)
 }

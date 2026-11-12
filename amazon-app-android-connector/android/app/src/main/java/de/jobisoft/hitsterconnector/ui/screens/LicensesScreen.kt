@@ -38,7 +38,7 @@ fun LicensesScreen(
             }
             if (songSeekerLicense != null) {
                 markdownText += "\n\n---\n\n## SongSeeker Hitster playlists\n\n" +
-                    "The card data comes from https://github.com/andygruber/songseeker-hitster-playlists\n\n" +
+                    "The card data is based in part on https://github.com/andygruber/songseeker-hitster-playlists\n\n" +
                     "```\n" + songSeekerLicense.trim() + "\n```\n"
             }
             

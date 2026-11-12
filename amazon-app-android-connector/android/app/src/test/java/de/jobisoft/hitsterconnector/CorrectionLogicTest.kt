@@ -16,7 +16,7 @@ class CorrectionLogicTest {
     private fun override(card: Int, year: Int?, title: String = "New Title", artist: String = "New Artist", time: String = "t1") =
         CardOverride(set, card, year, title, artist, time, "reader")
 
-    private val song = CSVSong(17, "Männer", "Herbert Grönemeyer", 2008, "https://example.org/17")
+    private val song = CSVSong(17, "Männer", "Herbert Grönemeyer", 2008, "B006LSV05O")
 
     // ── apply ───────────────────────────────────────────────────────────────
 
@@ -27,9 +27,17 @@ class CorrectionLogicTest {
         assertEquals("New Title", fixed.title)
         assertEquals("New Artist", fixed.artist)
         assertTrue(fixed.corrected)
-        assertEquals("the rest of the song stays", "https://example.org/17", fixed.url)
+        assertEquals("a correction without the id column keeps the id", "B006LSV05O", fixed.amazonId)
         assertEquals(17, fixed.index)
         assertFalse("the original is not marked", song.corrected)
+    }
+
+    @Test
+    fun theAmazonIdOfACorrectionReplacesClearsOrKeepsTheIdOfTheSong() {
+        assertEquals("B00FU4OCDW", CorrectionLogic.apply(song, override(17, 1984).copy(amazonId = "B00FU4OCDW")).amazonId)
+        assertNull("an empty id clears it", CorrectionLogic.apply(song, override(17, 1984).copy(amazonId = "")).amazonId)
+        assertEquals("no id column keeps it", "B006LSV05O", CorrectionLogic.apply(song, override(17, 1984).copy(amazonId = null)).amazonId)
+        assertEquals("B006LSV05O", CorrectionLogic.apply(song.copy(amazonId = null), override(17, 1984).copy(amazonId = "B006LSV05O")).amazonId)
     }
 
     @Test
@@ -69,6 +77,22 @@ class CorrectionLogicTest {
     }
 
     @Test
+    fun theAmazonIdColumnGoesThereAndBackAndRowsWithoutItHaveNone() {
+        val withId = override(103, 2006).copy(amazonId = "B006LSV05O")
+        val cleared = override(103, 2006).copy(amazonId = "")
+        assertEquals("$set,103,2006,New Title,New Artist,t1,reader,B006LSV05O", CorrectionLogic.line(withId))
+        assertEquals("$set,103,2006,New Title,New Artist,t1,reader,", CorrectionLogic.line(cleared))
+        assertEquals(withId, CorrectionLogic.parseLine(CorrectionLogic.line(withId)))
+        assertEquals(cleared, CorrectionLogic.parseLine(CorrectionLogic.line(cleared)))
+        // a row without the last column: seven fields, the id of the song stays
+        assertNull(CorrectionLogic.parseLine("$set,17,1984,New Title,New Artist,t1,reader")!!.amazonId)
+        // a text in the column that is no id is not taken
+        assertNull(CorrectionLogic.parseLine("$set,17,1984,New Title,New Artist,t1,reader,nonsense")!!.amazonId)
+        assertEquals("a link in the column gives the id", "B006LSV05O",
+            CorrectionLogic.parseLine("$set,17,1984,T,A,t1,reader,https://music.amazon.de/tracks/B006LSV05O")!!.amazonId)
+    }
+
+    @Test
     fun headerAndBrokenLinesAreNoCorrections() {
         assertNull(CorrectionLogic.parseLine(CorrectionLogic.HEADER))
         assertNull(CorrectionLogic.parseLine(""))
@@ -81,7 +105,7 @@ class CorrectionLogicTest {
     fun theExportHasTheHeaderAndTheLatestCorrectionPerCard() {
         val content = CorrectionLogic.exportContent(listOf(override(17, 1990, time = "t1"), override(17, 1984, time = "t2"), override(5, 2001)))
         val lines = content.trimEnd().lines()
-        assertEquals("set,card,year,title,artist,time,source", lines[0])
+        assertEquals("set,card,year,title,artist,time,source,amazonId", lines[0])
         assertEquals(3, lines.size)
         assertTrue(lines[1].startsWith("$set,17,1984,"))
         assertTrue(lines[2].startsWith("$set,5,2001,"))
@@ -89,8 +113,19 @@ class CorrectionLogicTest {
     }
 
     @Test
+    fun theExportHasTheAmazonIdOfTheLatestCorrection() {
+        val content = CorrectionLogic.exportContent(listOf(
+            override(103, 2006, time = "t1").copy(amazonId = ""),
+            override(103, 2006, time = "t2").copy(amazonId = "B006LSV05O")
+        ))
+        val lines = content.trimEnd().lines()
+        assertEquals(2, lines.size)
+        assertTrue(lines[1].endsWith(",t2,reader,B006LSV05O"))
+    }
+
+    @Test
     fun anEmptyExportHasOnlyTheHeader() {
-        assertEquals("set,card,year,title,artist,time,source\n", CorrectionLogic.exportContent(emptyList()))
+        assertEquals("set,card,year,title,artist,time,source,amazonId\n", CorrectionLogic.exportContent(emptyList()))
     }
 
     @Test

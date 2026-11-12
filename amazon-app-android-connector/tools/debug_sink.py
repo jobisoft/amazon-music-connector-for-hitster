@@ -9,7 +9,7 @@
   GET  /ping  "ok"
 
 The debug app finds this sink by itself: it sends the UDP broadcast "HITSTER-SINK?" to
-port 8782 (the HTTP port + 1 by default) and the sink answers "HITSTER-SINK <http port>"
+port 8782 and the sink answers "HITSTER-SINK <http port>"
 to the sender. Allow UDP 8782 in the firewall of the PC if the app does not find it.
 
 Everything is also appended to debug.log next to this script. Plain HTTP on the

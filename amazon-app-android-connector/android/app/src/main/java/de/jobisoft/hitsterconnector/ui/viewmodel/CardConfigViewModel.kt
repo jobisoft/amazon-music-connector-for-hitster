@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.jobisoft.hitsterconnector.data.local.CSVFileManager
-import de.jobisoft.hitsterconnector.data.local.ConfigDataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,8 +18,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CardConfigViewModel @Inject constructor(
-    private val csvFileManager: CSVFileManager,
-    private val configDataStore: ConfigDataStore
+    private val csvFileManager: CSVFileManager
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(CardConfigUiState())
@@ -62,9 +60,6 @@ class CardConfigViewModel @Inject constructor(
                             }
                         } ?: throw Exception("Could not open file")
                     }
-                    val currentUrls = configDataStore.getCsvUrls().toMutableSet()
-                    currentUrls.add(fileName)
-                    configDataStore.saveCSVUrls(currentUrls)
                     added++
                 } catch (e: Exception) {
                     failures.add("Error adding file $fileName: ${e.message}")
@@ -84,14 +79,7 @@ class CardConfigViewModel @Inject constructor(
             try {
                 val result = csvFileManager.delete(fileName)
                 result.fold(
-                    onSuccess = {
-                        // Remove from CSV URLs in ConfigDataStore
-                        val currentUrls = configDataStore.getCsvUrls().toMutableSet()
-                        currentUrls.remove(fileName)
-                        configDataStore.saveCSVUrls(currentUrls)
-                        
-                        loadCSVFiles()
-                    },
+                    onSuccess = { loadCSVFiles() },
                     onFailure = { exception ->
                         _uiState.value = _uiState.value.copy(
                             error = "Error removing file: ${exception.message}"

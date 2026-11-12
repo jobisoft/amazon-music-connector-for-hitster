@@ -5,9 +5,7 @@ import de.jobisoft.hitsterconnector.data.local.CardOverrides
 import de.jobisoft.hitsterconnector.util.CorrectionLogic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.io.StringReader
-import java.net.URI
 import javax.inject.Inject
 
 /**
@@ -18,9 +16,8 @@ class CSVRepository @Inject constructor(
     private val csvFileManager: CSVFileManager,
     private val overrides: CardOverrides
 ) {
-    private data class ParsedCSV(
-        val songsByIndex: Map<Int, CSVSong>,
-        val songsByUrl: Map<String, CSVSong>
+    internal data class ParsedCSV(
+        val songsByIndex: Map<Int, CSVSong>
     )
     
     /**
@@ -65,116 +62,6 @@ class CSVRepository @Inject constructor(
         }
     }
 
-    /**
-     * Get song from CSV by URL (supports YouTube URL normalization).
-     */
-    suspend fun getSongByUrl(
-        csvUrl: String,
-        scannedUrl: String
-    ): Result<CSVSong?> = withContext(Dispatchers.IO) {
-        try {
-            val csvContent = loadCSVContent(csvUrl)
-            val parsed = parseCSV(csvContent)
-            val song = buildLookupKeys(scannedUrl).asSequence()
-                .mapNotNull { key -> parsed.songsByUrl[key] }
-                .firstOrNull()
-            Result.success(song)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * Parse CSV content into a map
-     * Assumes CSV format: index,title,artist,year (or similar)
-     * Handles RFC 4180 compliant CSV with quoted fields
-     */
-    private fun parseCSV(csvContent: String): ParsedCSV {
-        val lines = StringReader(csvContent).readLines()
-        if (lines.isEmpty()) {
-            return ParsedCSV(emptyMap(), emptyMap())
-        }
-
-        val headerColumns = parseCSVLine(lines.first()).map { it.trim().lowercase() }
-        val artistIndex = headerColumns.indexOf("artist")
-        val titleIndex = headerColumns.indexOf("title")
-        val yearIndex = headerColumns.indexOf("year")
-        val urlIndex = headerColumns.indexOf("url")
-        // The number of the card. Do not take the row number instead: some files list the cards
-        // downwards (308, 307, ...), and then the row is not the card.
-        val cardNumberIndex = headerColumns.indexOf("card#")
-        val rowIsArtistTitleYearUrl = artistIndex >= 0 && titleIndex >= 0 && yearIndex >= 0 && urlIndex >= 0
-
-        val songsByIndex = mutableMapOf<Int, CSVSong>()
-        val songsByUrl = mutableMapOf<String, CSVSong>()
-        var fallbackIndex = 1
-
-        lines.drop(1).forEach { line ->
-            if (line.isBlank()) {
-                return@forEach
-            }
-
-            val columns = parseCSVLine(line)
-            if (columns.size < 3) {
-                return@forEach
-            }
-
-            val song = if (rowIsArtistTitleYearUrl) {
-                val artist = columns.getOrNull(artistIndex)?.trim().orEmpty()
-                val title = columns.getOrNull(titleIndex)?.trim().orEmpty()
-                val year = columns.getOrNull(yearIndex)?.trim()?.toIntOrNull()
-                val url = columns.getOrNull(urlIndex)?.trim().orEmpty()
-
-                if (title.isBlank() || artist.isBlank()) {
-                    return@forEach
-                }
-
-                val rowNumber = fallbackIndex++
-                CSVSong(
-                    index = columns.getOrNull(cardNumberIndex)?.trim()?.toIntOrNull() ?: rowNumber,
-                    title = title,
-                    artist = artist,
-                    year = year,
-                    url = url.ifBlank { null }
-                )
-            } else {
-                // Legacy format: index,title,artist,year[,url]
-                val index = columns[0].trim().toIntOrNull() ?: return@forEach
-                val title = columns.getOrNull(1)?.trim().orEmpty()
-                val artist = columns.getOrNull(2)?.trim().orEmpty()
-                val year = columns.getOrNull(3)?.trim()?.toIntOrNull()
-                val url = columns.getOrNull(4)?.trim().orEmpty()
-
-                if (title.isBlank() || artist.isBlank()) {
-                    return@forEach
-                }
-
-                CSVSong(
-                    index = index,
-                    title = title,
-                    artist = artist,
-                    year = year,
-                    url = url.ifBlank { null }
-                )
-            }
-
-            songsByIndex[song.index] = song
-            song.url?.let { url ->
-                val trimmed = url.trim()
-                if (trimmed.isNotEmpty()) {
-                    buildLookupKeys(trimmed).forEach { key ->
-                        songsByUrl[key] = song
-                    }
-                }
-            }
-        }
-
-        return ParsedCSV(
-            songsByIndex = songsByIndex,
-            songsByUrl = songsByUrl
-        )
-    }
-
     private fun loadCSVContent(csvUrlOrName: String): String {
         // Extract filename if it's a full URL
         val fileName = if (csvUrlOrName.contains("/") || csvUrlOrName.contains("\\")) {
@@ -192,149 +79,102 @@ class CSVRepository @Inject constructor(
         throw Exception("This card set is not installed. Import its CSV file in Card Config.")
     }
 
-    private fun buildLookupKeys(url: String): Set<String> {
-        val trimmed = url.trim()
-        if (trimmed.isEmpty()) {
-            return setOf(trimmed)
-        }
+    // the parsing is pure: it does not use the files of the app
+    companion object {
+        /** The text of the error for a file without our columns. */
+        const val MISSING_COLUMNS = "This CSV file needs the columns Card#, Title and Artist."
 
-        val keys = linkedSetOf(trimmed)
-        val uri = parseLookupUri(trimmed) ?: run {
-            return keys
-        }
-        val host = (uri.host ?: "").lowercase().removePrefix("www.")
-        val path = uri.path ?: ""
-        val fragment = uri.fragment?.trim().orEmpty()
-        val normalizedPath = path.trimEnd('/').ifEmpty { "/" }
+        /**
+         * Parse CSV content into a map from card number to song. The columns are found by their names in the
+         * header, in any case and in any place: `Card#`, `Title` and `Artist` are needed, `Year` and `AmazonID`
+         * may be missing or empty. Every other column (the upstream files of SongSeeker have `URL`,
+         * `Hashed Info`, `Youtube-Title`, `ISRC`, `Album`) is ignored. A file without the three needed columns
+         * in its header gives an error. Handles RFC 4180 compliant CSV with quoted fields.
+         */
+        internal fun parseCSV(csvContent: String): ParsedCSV {
+            val lines = StringReader(csvContent.removePrefix("\uFEFF")).readLines()
+            val header = lines.firstOrNull()?.let { parseCSVLine(it).map { name -> name.trim().lowercase() } }.orEmpty()
+            val cardIndex = header.indexOf("card#")
+            val titleIndex = header.indexOf("title")
+            val artistIndex = header.indexOf("artist")
+            val yearIndex = header.indexOf("year")
+            val amazonIdIndex = header.indexOf("amazonid")
+            if (cardIndex < 0 || titleIndex < 0 || artistIndex < 0) throw Exception(MISSING_COLUMNS)
 
-        if (host == "youtu.be" || host.endsWith("youtube.com")) {
-            val videoId = when {
-                host == "youtu.be" -> path.trim('/').substringBefore("/")
-                path.startsWith("/watch") -> extractQueryParam(uri.query, "v")
-                path.startsWith("/shorts/") -> path.removePrefix("/shorts/").substringBefore("/")
-                path.startsWith("/embed/") -> path.removePrefix("/embed/").substringBefore("/")
-                else -> null
-            }?.takeIf { it.isNotBlank() }
-
-            if (videoId != null) {
-                keys.add("youtube:$videoId")
+            val songsByIndex = mutableMapOf<Int, CSVSong>()
+            for (line in lines.drop(1)) {
+                if (line.isBlank()) continue
+                val columns = parseCSVLine(line)
+                val card = columns.getOrNull(cardIndex)?.trim()?.toIntOrNull() ?: continue
+                val title = columns.getOrNull(titleIndex)?.trim().orEmpty()
+                val artist = columns.getOrNull(artistIndex)?.trim().orEmpty()
+                if (title.isBlank() || artist.isBlank()) continue
+                songsByIndex[card] = CSVSong(
+                    index = card,
+                    title = title,
+                    artist = artist,
+                    year = columns.getOrNull(yearIndex)?.trim()?.toIntOrNull(),
+                    amazonId = columns.getOrNull(amazonIdIndex)?.trim()?.ifBlank { null }
+                )
             }
+            return ParsedCSV(songsByIndex = songsByIndex)
         }
 
-        if (host.contains("hitster.com") || host.contains("hitstergame.com")) {
-            keys.add("hitster:$normalizedPath")
-            val pathSegments = normalizedPath.trim('/').split("/").filter { it.isNotBlank() }
-            if (pathSegments.isNotEmpty()) {
-                keys.add("hitster-segment:${pathSegments.last()}")
-            }
-        }
-
-        if (fragment.isNotEmpty()) {
-            keys.add("hash:$fragment")
-            keys.add(fragment)
-        }
-
-        keys.add(trimmed.substringBefore("#").trimEnd('/'))
-        return keys
-    }
-
-    private fun parseLookupUri(rawUrl: String): URI? {
-        val direct = try {
-            URI(rawUrl)
-        } catch (_: Exception) {
-            null
-        }
-        if (direct?.host?.isNotBlank() == true) {
-            return direct
-        }
-
-        val lower = rawUrl.lowercase()
-        val looksLikeYoutubeWithoutScheme = lower.startsWith("youtube.com/") ||
-            lower.startsWith("www.youtube.com/") ||
-            lower.startsWith("m.youtube.com/") ||
-            lower.startsWith("youtu.be/")
-
-        if (!looksLikeYoutubeWithoutScheme) {
-            return direct
-        }
-
-        return try {
-            URI("https://$rawUrl")
-        } catch (_: Exception) {
-            direct
-        }
-    }
-
-    private fun extractQueryParam(query: String?, paramName: String): String? {
-        if (query.isNullOrBlank()) {
-            return null
-        }
-
-        return query.split("&")
-            .mapNotNull { keyValue ->
-                val parts = keyValue.split("=", limit = 2)
-                if (parts.size == 2 && parts[0] == paramName) {
-                    parts[1]
-                } else {
-                    null
-                }
-            }
-            .firstOrNull()
-    }
-    
-    /**
-     * Parse a single CSV line handling quoted fields according to RFC 4180
-     * Handles:
-     * - Fields with commas: "Title, with comma"
-     * - Fields with quotes: "Title with ""quotes"""
-     * - Mixed quoted and unquoted fields
-     */
-    private fun parseCSVLine(line: String): List<String> {
-        val result = mutableListOf<String>()
-        val currentField = StringBuilder()
-        var inQuotes = false
-        var i = 0
+        /**
+         * Parse a single CSV line handling quoted fields according to RFC 4180
+         * Handles:
+         * - Fields with commas: "Title, with comma"
+         * - Fields with quotes: "Title with ""quotes"""
+         * - Mixed quoted and unquoted fields
+         */
+        private fun parseCSVLine(line: String): List<String> {
+            val result = mutableListOf<String>()
+            val currentField = StringBuilder()
+            var inQuotes = false
+            var i = 0
         
-        while (i < line.length) {
-            val char = line[i]
+            while (i < line.length) {
+                val char = line[i]
             
-            when {
-                // Handle quote character
-                char == '"' -> {
-                    if (inQuotes) {
-                        // Check if this is an escaped quote (two quotes in a row)
-                        if (i + 1 < line.length && line[i + 1] == '"') {
-                            // Escaped quote - add one quote to field
-                            currentField.append('"')
-                            i++ // Skip the second quote
+                when {
+                    // Handle quote character
+                    char == '"' -> {
+                        if (inQuotes) {
+                            // Check if this is an escaped quote (two quotes in a row)
+                            if (i + 1 < line.length && line[i + 1] == '"') {
+                                // Escaped quote - add one quote to field
+                                currentField.append('"')
+                                i++ // Skip the second quote
+                            } else {
+                                // End of quoted field
+                                inQuotes = false
+                            }
                         } else {
-                            // End of quoted field
-                            inQuotes = false
+                            // Start of quoted field
+                            inQuotes = true
                         }
-                    } else {
-                        // Start of quoted field
-                        inQuotes = true
+                    }
+                    // Handle comma (field separator)
+                    char == ',' && !inQuotes -> {
+                        // End of field
+                        result.add(currentField.toString())
+                        currentField.clear()
+                    }
+                    // Regular character
+                    else -> {
+                        currentField.append(char)
                     }
                 }
-                // Handle comma (field separator)
-                char == ',' && !inQuotes -> {
-                    // End of field
-                    result.add(currentField.toString())
-                    currentField.clear()
-                }
-                // Regular character
-                else -> {
-                    currentField.append(char)
-                }
+                i++
             }
-            i++
+        
+            // Add the last field
+            result.add(currentField.toString())
+        
+            return result
         }
-        
-        // Add the last field
-        result.add(currentField.toString())
-        
-        return result
     }
+
 }
 
 /**
@@ -345,7 +185,8 @@ data class CSVSong(
     val title: String,
     val artist: String,
     val year: Int? = null,
-    val url: String? = null,
+    /** The Amazon track id of the song (column `AmazonID`, optional). The Android Amazon app plays it first. */
+    val amazonId: String? = null,
     /** True if a correction of the user on this phone lies over the bundled values (see CardOverrides). */
     val corrected: Boolean = false
 )

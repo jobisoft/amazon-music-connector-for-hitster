@@ -7,6 +7,7 @@ import de.jobisoft.hitsterconnector.reader.ScanFilter
 import de.jobisoft.hitsterconnector.reader.Verdict
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -57,9 +58,26 @@ class ReportOverlayLogicTest {
 
     @Test
     fun theShownValuesBecomeWhatTheUserSaved() {
-        assertEquals(Triple(1984, "New Title", "New Artist"), ReportRefresh.values(2008, "Old Title", "Old Artist", report(17, 1984, "New Title", "New Artist")))
+        assertEquals(
+            ReportRefresh.Values(1984, "New Title", "New Artist", null),
+            ReportRefresh.values(2008, "Old Title", "Old Artist", null, report(17, 1984, "New Title", "New Artist"))
+        )
         // a value the report does not have stays as it was (a row of the first version has a year only)
-        assertEquals(Triple(1984, "Old Title", "Old Artist"), ReportRefresh.values(2008, "Old Title", "Old Artist", report(17, 1984, null, null)))
+        assertEquals(
+            ReportRefresh.Values(1984, "Old Title", "Old Artist", "B006LSV05O"),
+            ReportRefresh.values(2008, "Old Title", "Old Artist", "B006LSV05O", report(17, 1984, null, null))
+        )
+    }
+
+    @Test
+    fun theShownAmazonIdBecomesWhatTheUserSavedAndAReportWithoutItKeepsIt() {
+        val old = report(17, 1984, "T", "A")
+        assertEquals("a row without the id column keeps the id", "B006LSV05O",
+            ReportRefresh.values(2008, "T", "A", "B006LSV05O", old).amazonId)
+        assertEquals("B00FU4OCDW",
+            ReportRefresh.values(2008, "T", "A", "B006LSV05O", old.copy(ourAmazonId = "B006LSV05O", cardAmazonId = "B00FU4OCDW")).amazonId)
+        assertNull("an empty id clears it",
+            ReportRefresh.values(2008, "T", "A", "B006LSV05O", old.copy(ourAmazonId = "B006LSV05O", cardAmazonId = "")).amazonId)
     }
 
     // ── the quiz: the next card ────────────────────────────────────────────────

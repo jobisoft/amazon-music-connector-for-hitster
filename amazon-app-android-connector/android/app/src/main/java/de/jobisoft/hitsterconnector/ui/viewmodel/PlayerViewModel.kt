@@ -6,7 +6,9 @@ import de.jobisoft.hitsterconnector.data.repository.ConnectorRepository
 import de.jobisoft.hitsterconnector.reader.ReportRefresh
 import de.jobisoft.hitsterconnector.reader.ResultRow
 import de.jobisoft.hitsterconnector.domain.model.SongMapping
+import de.jobisoft.hitsterconnector.util.PlayFlow
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -21,7 +23,7 @@ enum class SendState { IDLE, SENDING, SUCCESS, FAILED }
 data class CardRef(val setFile: String, val number: Int)
 
 /** What the reveal box shows once it is tapped. The year is null for the test song. */
-data class SongInfo(val title: String, val artist: String, val year: Int?)
+data class SongInfo(val title: String, val artist: String, val year: Int?, val amazonId: String? = null)
 
 data class GameUiState(
     val sendState: SendState = SendState.IDLE,
@@ -55,7 +57,11 @@ data class GameUiState(
     /** The card on the screen, null for the test song of an unknown card. */
     val cardRef: CardRef? = null,
     /** Counts up with every card shown, a new value means a new card. */
-    val cardSerial: Int = 0
+    val cardSerial: Int = 0,
+    /** The line under the sending text ("loading", "buffering", "searching"), null for none. */
+    val status: String? = null,
+    /** True when the request took [PlayFlow.CANCEL_AFTER_MS] without playing: the screen offers Cancel. */
+    val canCancel: Boolean = false
 )
 
 /**
@@ -80,12 +86,18 @@ abstract class PlayerViewModel(
                 val ref = _uiState.value.cardRef ?: return@collect
                 val song = _uiState.value.song ?: return@collect
                 if (!ReportRefresh.isFor(ref.setFile, ref.number, row)) return@collect
-                val (year, title, artist) = ReportRefresh.values(song.year, song.title, song.artist, row)
-                _uiState.value = _uiState.value.copy(song = SongInfo(title, artist, year))
+                val v = ReportRefresh.values(song.year, song.title, song.artist, song.amazonId, row)
+                _uiState.value = _uiState.value.copy(song = SongInfo(v.title, v.artist, v.year, v.amazonId))
             }
         }
         viewModelScope.launch {
             connectorRepository.songEnded.collect { ended -> _uiState.value = _uiState.value.copy(songEnded = ended) }
+        }
+        viewModelScope.launch {
+            connectorRepository.playStatus.collect { status ->
+                // only while a request is on its way, the status of the last one must not stay on the result
+                if (_uiState.value.sendState == SendState.SENDING) _uiState.value = _uiState.value.copy(status = status)
+            }
         }
     }
 
@@ -122,8 +134,6 @@ abstract class PlayerViewModel(
         pollJob?.cancel() // the old song is not asked about any more
         connectorRepository.stopAndConfirm()
         if (leaving) return false // the screen was left meanwhile: no new card
-        // sound off for the load of the new song, back on when it plays at its start offset
-        connectorRepository.muteForNewSong()
         beginSending()
         stopping = false
         return true
@@ -133,7 +143,18 @@ abstract class PlayerViewModel(
     protected fun beginSending() {
         pollJob?.cancel()
         _uiState.value = GameUiState(sendState = SendState.SENDING)
+        // no Cancel before the request took a while, then it is the way out of a request that hangs
+        cancelOffer?.cancel()
+        cancelOffer = viewModelScope.launch {
+            delay(PlayFlow.CANCEL_AFTER_MS)
+            if (_uiState.value.sendState == SendState.SENDING) _uiState.value = _uiState.value.copy(canCancel = true)
+        }
     }
+
+    private var cancelOffer: Job? = null
+
+    /** The job of the request that is on its way, so that Cancel can end it. */
+    private var sendJob: Job? = null
 
     /** Back 10 s, forward 10 s, play again from the start offset, stop, or go to a position. */
     fun control(action: String, position: Float? = null) {
@@ -184,7 +205,8 @@ abstract class PlayerViewModel(
         mapping: SongMapping, setName: String?, isTestSong: Boolean, warning: String?, info: String? = null, cardRef: CardRef? = null
     ) {
         if (leaving) return
-        val result = connectorRepository.play(mapping.title, mapping.artist, mapping.year, mapping.url)
+        sendJob = currentCoroutineContext()[Job]
+        val result = connectorRepository.play(mapping.title, mapping.artist, mapping.year, mapping.url, mapping.amazonId)
         result.fold(
             onSuccess = { answer ->
                 _uiState.value = _uiState.value.copy(
@@ -195,8 +217,10 @@ abstract class PlayerViewModel(
                     duration = 0f,
                     controlError = null,
                     message = null,
+                    status = null,
+                    canCancel = false,
                     warning = warning,
-                    song = SongInfo(mapping.title, mapping.artist, if (isTestSong) null else mapping.year),
+                    song = SongInfo(mapping.title, mapping.artist, if (isTestSong) null else mapping.year, mapping.amazonId),
                     setName = setName,
                     isTestSong = isTestSong,
                     revealed = false,
@@ -211,14 +235,14 @@ abstract class PlayerViewModel(
     }
 
     protected fun fail(message: String) {
-        connectorRepository.unmuteNow("request failed")
-        _uiState.value = _uiState.value.copy(sendState = SendState.FAILED, message = message)
+        cancelOffer?.cancel()
+        _uiState.value = _uiState.value.copy(sendState = SendState.FAILED, message = message, status = null, canCancel = false)
     }
 
     /**
      * The screen with the controls is left (the Back button, the system back, the screen destroyed,
-     * but not "Scan next card"): stop the song (pause and rewind), disarm the guard, unmute, in
-     * this order. It runs in a scope of the application and does not hold up the navigation, it also
+     * but not "Scan next card"): stop the song (pause and rewind), disarm the guard, in this
+     * order. It runs in a scope of the application and does not hold up the navigation, it also
      * finishes after this view model is gone. Only once, whichever way the screen is left first.
      */
     open fun leave() {
@@ -233,9 +257,50 @@ abstract class PlayerViewModel(
         super.onCleared()
     }
 
+    /**
+     * "Scan next card": the song of this card is stopped like by the Stop button, then the camera comes back.
+     * Scans and taps do nothing while the stop is on its way.
+     */
+    fun nextCard() {
+        if (!markStopping()) return
+        viewModelScope.launch {
+            pollJob?.cancel()
+            connectorRepository.stopForNextCard()
+            stopping = false
+            reset()
+        }
+    }
+
+    /**
+     * Cancel on the sending screen: the request ends, Amazon Music is stopped like by "Scan next card", the sound
+     * is back on, and the screen before the scan comes back (the camera).
+     */
+    fun cancelSending() {
+        if (_uiState.value.sendState != SendState.SENDING || stopping) return
+        stopping = true
+        played = true
+        sendJob?.cancel()
+        cancelOffer?.cancel()
+        viewModelScope.launch {
+            connectorRepository.stopForNextCard()
+            stopping = false
+            reset()
+        }
+    }
+
+    /** Cancel in a mode without a camera: the request ends and the screen is left like by Back. */
+    fun cancelAndLeave() {
+        if (_uiState.value.sendState != SendState.SENDING) return
+        sendJob?.cancel()
+        cancelOffer?.cancel()
+        leave()
+        reset()
+    }
+
     /** Back to the camera, or out of the quiz. */
     fun reset() {
         pollJob?.cancel()
+        cancelOffer?.cancel()
         _uiState.value = GameUiState()
     }
 }

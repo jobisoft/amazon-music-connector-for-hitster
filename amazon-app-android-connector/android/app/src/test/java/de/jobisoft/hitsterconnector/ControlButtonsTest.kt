@@ -36,7 +36,7 @@ class ControlButtonsTest {
 
     @Test
     fun afterTheEndOfTheSongTheTogglesOfferPlayAndRestartEvenIfThePlayerStillReportsPlaying() {
-        // the last second plays in silence, the end is muted
+        // the song was paused for its end, the player may still report playing for a moment
         val b = ControlButtons.from(playing = true, stopped = false, songEnded = true)
         assertEquals(ControlAction.PLAY, b.pausePlay)
         assertEquals(ControlAction.RESTART, b.stopRestart)

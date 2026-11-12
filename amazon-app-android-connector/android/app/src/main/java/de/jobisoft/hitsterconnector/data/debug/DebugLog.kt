@@ -13,10 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -25,7 +21,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Debug channel of the app. Every event goes to logcat and, fire and forget, to the log
@@ -44,7 +39,6 @@ object DebugLog {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + Safe.handler)
     private val queue by lazy { Channel<JSONObject>(capacity = 3000, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
-    private val pending = AtomicInteger(0)
     private val client by lazy {
         OkHttpClient.Builder()
             .connectTimeout(1500, TimeUnit.MILLISECONDS)
@@ -53,15 +47,6 @@ object DebugLog {
             .build()
     }
     private val json = "application/json".toMediaType()
-
-    private val _sent = MutableStateFlow(0)
-    private val _failed = MutableStateFlow(0)
-
-    /** Events the sink has taken. */
-    val sent: StateFlow<Int> = _sent.asStateFlow()
-
-    /** Events that could not be delivered (sink not reachable). */
-    val failed: StateFlow<Int> = _failed.asStateFlow()
 
     @Volatile
     private var started = false
@@ -73,11 +58,6 @@ object DebugLog {
 
     @Volatile
     private var lastSearch = 0L
-
-    /** Search again at the next batch, for example when the user asks for diagnostics. */
-    fun searchAgain() {
-        lastSearch = 0L
-    }
 
     fun init(@Suppress("UNUSED_PARAMETER") context: Context) {
         if (!ENABLED || started) return
@@ -92,42 +72,27 @@ object DebugLog {
                     batch.put(more)
                     count++
                 }
-                deliver(batch, count)
+                deliver(batch)
             }
         }
     }
 
-    private fun deliver(batch: JSONArray, count: Int) {
+    private fun deliver(batch: JSONArray) {
         try {
             if (sinkUrl == null && System.currentTimeMillis() - lastSearch >= RETRY_DISCOVERY_MS) {
                 sinkUrl = SinkDiscovery.find()
                 lastSearch = System.currentTimeMillis()
             }
             val url = sinkUrl
-            if (url == null) {
-                _failed.value += count
-                return
-            }
+            if (url == null) return
             val request = Request.Builder()
                 .url(url.trimEnd('/') + "/log")
                 .post(batch.toString().toRequestBody(json))
                 .build()
-            client.newCall(request).execute().use { response ->
-                if (response.isSuccessful) _sent.value += count else _failed.value += count
-            }
+            client.newCall(request).execute().close()
         } catch (_: Exception) {
             sinkUrl = null // the PC may have a new address: search again
-            _failed.value += count
-        } finally {
-            pending.addAndGet(-count)
         }
-    }
-
-    /** Waits until everything logged so far has been tried (at most [timeoutMs]). */
-    suspend fun flush(timeoutMs: Long = 8000) {
-        if (!ENABLED) return
-        val end = System.currentTimeMillis() + timeoutMs
-        while (pending.get() > 0 && System.currentTimeMillis() < end) delay(100)
     }
 
     fun log(tag: String, msg: String, data: Map<String, Any?>? = null) {
@@ -140,8 +105,7 @@ object DebugLog {
             event.put("msg", msg)
             if (data != null) event.put("data", toJson(data))
             Log.d(LOGCAT_TAG, "[$tag] $msg" + (data?.let { " $it" } ?: ""))
-            pending.incrementAndGet()
-            if (!started || queue.trySend(event).isFailure) pending.decrementAndGet()
+            if (started) queue.trySend(event)
         } catch (e: Throwable) {
             Log.w(LOGCAT_TAG, "log event dropped: [$tag] $msg", e)
         }

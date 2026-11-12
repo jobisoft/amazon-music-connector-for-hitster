@@ -93,16 +93,4 @@ class CSVFileManager @Inject constructor(
     fun getAllLocalFiles(): List<File> {
         return csvDir.listFiles()?.filter { it.extension == "csv" } ?: emptyList()
     }
-
-    /**
-     * Delete all CSV files
-     */
-    suspend fun deleteAll(): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            getAllLocalFiles().forEach { it.delete() }
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
 }

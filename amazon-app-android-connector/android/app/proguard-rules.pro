@@ -1,6 +1,6 @@
 # Rules for the production (release) build. R8 shrinks, optimizes and obfuscates.
-# The libraries bring their own consumer rules (Hilt, OkHttp, CameraX, coroutines, DataStore,
-# Compose). Below is what this app needs on top, or what is kept to be safe.
+# The libraries bring their own consumer rules (Hilt, OkHttp, CameraX, coroutines, Compose).
+# Below is what this app needs on top, or what is kept to be safe.
 
 # Stack traces of a crash stay readable with the mapping file of the build
 -keepattributes SourceFile,LineNumberTable,*Annotation*,Signature,InnerClasses,EnclosingMethod
@@ -32,9 +32,6 @@
 -dontwarn com.google.zxing.**
 -keep class com.google.zxing.** { *; }
 -keep class org.commonmark.** { *; }
-
-# DataStore (protobuf lite inside preferences)
--keepclassmembers class * extends androidx.datastore.preferences.protobuf.GeneratedMessageLite { <fields>; }
 
 # Kotlin coroutines
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
