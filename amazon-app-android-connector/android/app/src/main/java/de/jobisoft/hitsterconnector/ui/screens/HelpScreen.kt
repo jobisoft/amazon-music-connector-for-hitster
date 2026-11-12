@@ -52,9 +52,9 @@ fun HelpScreen(
                 Section(
                     title = "Modes",
                     content = """
-                        1. Play Mode: scan a card. The song starts at the start position set in the Options, 20 seconds by default (short songs earlier). Title, artist and year stay hidden, tap the blurred box to show them. The buttons pause, stop and jump 10 seconds.
+                        1. Play Mode: scan a card. The song starts at the start position set in the Options, 20 seconds by default (short songs earlier). Title, artist and year stay hidden, tap the blurred box to show them. The buttons pause, stop and jump 10 seconds. The camera closes after 15 seconds and the app goes back to the main screen.
                         2. Quiz Mode: pick card sets. Random cards play one after another, none twice until all have played.
-                        3. Reader Mode: scan a card to see its artist, year and title. "Send to Amazon Music app" plays it. A card the app does not know can be added here, by typing it in ("Add manually") or by reading the back of the card ("Add via OCR").
+                        3. Reader Mode: scan a card to see its artist, year and title. Nothing plays here. A card the app does not know can be added here, by typing it in ("Add manually") or by reading the back of the card ("Add via OCR").
                     """.trimIndent()
                 )
 

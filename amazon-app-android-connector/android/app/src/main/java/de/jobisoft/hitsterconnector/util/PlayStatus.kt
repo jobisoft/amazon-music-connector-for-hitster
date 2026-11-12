@@ -8,10 +8,10 @@ object PlayStatus {
     const val LOADING = "loading"
     const val SEARCHING = "searching"
 
-    /**
-     * The word for the state of the session while the track is loaded and does not play yet. PAUSED and STOPPED
-     * read "preparing" because the app pauses and seeks the track itself before it plays.
-     */
+    /** The line of the pre-load of a cold start, with the seconds that are left. */
+    fun preload(secondsLeft: Int): String = "$WAKING (${secondsLeft}s)"
+
+    /** The word for the state of the session while the track is loaded and does not play yet. */
     fun forState(state: Int?): String = when (state) {
         null, PlaybackState.STATE_NONE -> "waiting"
         PlaybackState.STATE_STOPPED, PlaybackState.STATE_PAUSED -> "preparing"

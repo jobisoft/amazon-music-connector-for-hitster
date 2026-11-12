@@ -26,6 +26,7 @@ import de.jobisoft.hitsterconnector.util.CrashReporter
 import de.jobisoft.hitsterconnector.util.Safe
 import de.jobisoft.hitsterconnector.util.LeaveScreen
 import de.jobisoft.hitsterconnector.util.PlayAction
+import de.jobisoft.hitsterconnector.util.ColdPreload
 import de.jobisoft.hitsterconnector.util.EndDecision
 import de.jobisoft.hitsterconnector.util.PlayDecision
 import de.jobisoft.hitsterconnector.util.PlayFlow
@@ -42,7 +43,6 @@ import de.jobisoft.hitsterconnector.util.StartSetting
 import de.jobisoft.hitsterconnector.util.SearchExtras
 import de.jobisoft.hitsterconnector.util.SearchQuery
 import de.jobisoft.hitsterconnector.util.StateNames
-import de.jobisoft.hitsterconnector.util.StopConfirm
 import de.jobisoft.hitsterconnector.util.TitleMatch
 import de.jobisoft.hitsterconnector.util.StreamGuard
 import de.jobisoft.hitsterconnector.util.VolumeDuck
@@ -53,6 +53,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -92,7 +93,6 @@ class ConnectorRepository @Inject constructor(
 
         /** Time for a search result to start playing once the session shows it. */
         private const val SEARCH_START_MS = 4_500L
-        private const val STALE_ITEM_MS = 1_500L
 
         /** Time for the session to show the requested id after the address was handed over. */
         private const val ID_STEP_MS = PlayFlow.LOAD_MS
@@ -113,32 +113,20 @@ class ConnectorRepository @Inject constructor(
     }
 
     /**
-     * Before a new request: pauses the song that plays and waits until the player says it stopped
-     * (PAUSED, STOPPED or NONE), checking every 100 ms. True at once if nothing plays. After
-     * [timeoutMs] it gives up with false, the caller goes on anyway so the app never hangs.
-     * The end guard is disarmed first, a stopped song needs no guard.
+     * Pauses the song that plays, fire and forget: no wait for the answer, no rewind, nothing happens if it fails.
+     * It is the first step when a scan mode starts (Play Mode opened, "Scan next card", Cancel): the next card is loaded
+     * over it, and the end guard pauses what still plays.
      */
-    suspend fun stopAndConfirm(timeoutMs: Long = 3000): Boolean = withContext(Dispatchers.IO) {
-        val result = StopConfirm.run(
-            readState = { amazonController()?.playbackState?.state },
-            pause = {
-                endGuard.disarm("stop before a new request")
-                try {
-                    amazonController()?.transportControls?.pause()
-                } catch (e: Throwable) {
-                    DebugLog.log("stop", "pause threw", mapOf("error" to e))
-                }
-            },
-            now = { SystemClock.elapsedRealtime() },
-            sleep = { delay(it) },
-            timeoutMs = timeoutMs
-        )
-        DebugLog.log(
-            "stop", if (result.confirmed) "before new request" else "stop not confirmed, going on anyway",
-            mapOf("needed" to result.needed, "confirmed" to result.confirmed,
-                "polls" to result.polls, "elapsedMs" to result.elapsedMs)
-        )
-        result.confirmed
+    fun pauseSong() {
+        leaveScope.launch {
+            try {
+                val controller = amazonController()
+                DebugLog.log("stop", "pause, fire and forget", mapOf("session" to controller?.let { describe(it) }))
+                controller?.transportControls?.pause()
+            } catch (e: Throwable) {
+                DebugLog.log("stop", "pause threw", mapOf("error" to e))
+            }
+        }
     }
 
     /** The song of the last successful play request: what "Play again" replays, and what the buttons check against. */
@@ -545,10 +533,6 @@ class ConnectorRepository @Inject constructor(
     @Volatile
     private var byId = false
 
-    /** The media id of the item that failed to start in the id route, so the search does not take it for its own result at once. */
-    @Volatile
-    private var staleId: String? = null
-
     /** The debug record of what Amazon loaded, and once per request its queue. Never throws. */
     private fun logSearchResult(title: String, artist: String, controller: MediaController) {
         try {
@@ -618,8 +602,8 @@ class ConnectorRepository @Inject constructor(
         album: String?
     ): Result<PlayAnswer> = withContext(Dispatchers.IO) {
         val started = SystemClock.elapsedRealtime()
-        // the new song is "another song" for the guard of the old one
-        endGuard.disarm("new play request")
+        // the song of the last card is not expected any more, the guard does nothing until the new song plays
+        endGuard.clearExpected()
         stoppedByUser = false
         DebugLog.log(
             "play", "request",
@@ -641,7 +625,6 @@ class ConnectorRepository @Inject constructor(
 
         uiStarted = false
         titleLoaded = false
-        staleId = null
         queueLogged = false
         byId = false
         val stepsRun = mutableListOf<String>()
@@ -686,15 +669,11 @@ class ConnectorRepository @Inject constructor(
          * out, so no report is missed. Our item is paused at the first change, moved to the start offset and
          * played when it is paused near it. A foreign item that replaced ours ends the attempt.
          */
-        suspend fun idAttempt(id: String, reload: Int): PlayDrive.Result {
+        suspend fun idAttempt(id: String): PlayDrive.Result {
             val handle = sessionWatcher.open()
             try {
-                val baseline = handle.current()?.mediaId
-                val ctx = PlayReactor.Ctx(
-                    canReload = true, cold = coldStart, position = StartSetting.get(context), baselineMediaId = baseline,
-                    limitMs = PlayWait.BUFFER_WAIT_MS
-                )
-                DebugLog.log(ID_STEP_NAME, "step starts", mapOf("timeoutMs" to ID_STEP_MS, "reload" to reload))
+                val ctx = PlayReactor.Ctx(position = StartSetting.get(context), limitMs = PlayWait.BUFFER_WAIT_MS)
+                DebugLog.log(ID_STEP_NAME, "step starts", mapOf("timeoutMs" to ID_STEP_MS))
                 val drive = PlayDrive(
                     handle, ID_STEP_NAME, ctx, ID_STEP_MS,
                     classify = { s, _ -> PlayFlow.classify(s.mediaId, id) },
@@ -705,7 +684,8 @@ class ConnectorRepository @Inject constructor(
                         enterPhase(PlayFlow.Phase.START)
                     },
                     onOursState = { s -> _playStatus.value = PlayStatus.forState(s.state) },
-                    onPlaySent = { VolumeDuck.restore(context, "play sent") }
+                    onOursPlaying = { s -> endGuard.expect(s.mediaId, s.title) },
+                    onStarted = { VolumeDuck.restore(context, "song started at its offset") }
                 )
                 return drive.run { sendId(handle.controller(), id, title, artist) }
             } finally {
@@ -714,55 +694,32 @@ class ConnectorRepository @Inject constructor(
         }
 
         /**
-         * The id route of a card with an id: load, pause, seek, play (see [PlayDrive]). When a foreign item
-         * replaced ours the id is loaded again, see [PlayFlow.afterReplaced]. False when the route fails, the
+         * The id route of a card with an id: load, wait for PLAYING, one seek (see [PlayDrive]). A foreign item that
+         * replaces ours is the business of the end guard (see [EndGuard.armReload]). False when the route fails, the
          * caller goes on with the search.
          */
         suspend fun idRoute(id: String): Boolean {
             byId = true
-            val routeBegin = SystemClock.elapsedRealtime()
-            var reloads = 0
             try {
-                while (true) {
-                    enterPhase(PlayFlow.Phase.LOAD)
-                    val r = idAttempt(id, reloads)
-                    val replaced = r.outcome == PlayDrive.Outcome.REPLACED ||
-                        (r.outcome == PlayDrive.Outcome.START_FAILED && r.lastItem == PlayFlow.Item.FOREIGN)
-                    when {
-                        r.outcome == PlayDrive.Outcome.PLAYING -> {
-                            if (winner == null) winner = ID_STEP_NAME
-                            return true
-                        }
-                        replaced -> {
-                            val next = PlayFlow.afterReplaced(reloads, SystemClock.elapsedRealtime() - routeBegin)
-                            DebugLog.log(
-                                "play", "session item replaced",
-                                mapOf("wantedId" to id, "foreignTitle" to r.last?.title,
-                                    "foreignMediaId" to (r.replacedBy ?: r.last?.mediaId),
-                                    "phase" to r.phase, "ms" to SystemClock.elapsedRealtime() - routeBegin,
-                                    "reloadsDone" to reloads, "next" to next.name.lowercase())
-                            )
-                            if (next != PlayFlow.Next.RELOAD) {
-                                staleId = id
-                                return false
-                            }
-                            reloads++
-                        }
-                        r.outcome == PlayDrive.Outcome.START_FAILED -> {
-                            val state = r.last?.state ?: PlaybackState.STATE_NONE
-                            staleId = id
-                            DebugLog.log(
-                                "play", "id start failed",
-                                mapOf("amazonId" to id, "reason" to (if (PlayWait.isLoading(state)) "buffering" else "not playing"),
-                                    "detail" to r.reason, "state" to stateName(state), "sessions" to describeSessions())
-                            )
-                            return false
-                        }
-                        else -> {
-                            logIdNotShown(id, title, r.last)
-                            staleId = null
-                            return false
-                        }
+                enterPhase(PlayFlow.Phase.LOAD)
+                val r = idAttempt(id)
+                return when (r.outcome) {
+                    PlayDrive.Outcome.PLAYING -> {
+                        if (winner == null) winner = ID_STEP_NAME
+                        true
+                    }
+                    PlayDrive.Outcome.START_FAILED -> {
+                        val state = r.last?.state ?: PlaybackState.STATE_NONE
+                        DebugLog.log(
+                            "play", "id start failed",
+                            mapOf("amazonId" to id, "reason" to (if (PlayWait.isLoading(state)) "buffering" else "not playing"),
+                                "detail" to r.reason, "state" to stateName(state), "sessions" to describeSessions())
+                        )
+                        false
+                    }
+                    else -> {
+                        logIdNotShown(id, title, r.last)
+                        false
                     }
                 }
             } finally {
@@ -775,17 +732,12 @@ class ConnectorRepository @Inject constructor(
             val handle = sessionWatcher.open()
             val begin = SystemClock.elapsedRealtime()
             try {
-                val ctx = PlayReactor.Ctx(
-                    canReload = false, cold = false, position = StartSetting.get(context), baselineMediaId = handle.current()?.mediaId,
-                    limitMs = SEARCH_START_MS
-                )
+                val ctx = PlayReactor.Ctx(position = StartSetting.get(context), limitMs = SEARCH_START_MS)
                 DebugLog.log("b-playFromSearch", "step starts", mapOf("timeoutMs" to SEARCH_STEP_MS))
                 val drive = PlayDrive(
                     handle, "b-playFromSearch", ctx, SEARCH_STEP_MS,
-                    classify = { s, t ->
-                        val stale = staleId
+                    classify = { s, _ ->
                         when {
-                            stale != null && s.mediaId == stale && t - begin < STALE_ITEM_MS -> PlayFlow.Item.NONE
                             !s.hasTitle -> PlayFlow.Item.NONE
                             TitleMatch.same(s.title, title) -> PlayFlow.Item.OURS
                             else -> PlayFlow.Item.FOREIGN
@@ -797,7 +749,8 @@ class ConnectorRepository @Inject constructor(
                         DebugLog.log("search", "final", mapOf("wantedTitle" to title, "finalShown" to s.title))
                     },
                     onOursState = {},
-                    onPlaySent = { VolumeDuck.restore(context, "play sent") }
+                    onOursPlaying = { s -> endGuard.expect(s.mediaId, s.title) },
+                    onStarted = { VolumeDuck.restore(context, "song started at its offset") }
                 )
                 val r = drive.run { sendSearch(handle.controller(), title, artist, album) }
                 val playing = r.outcome == PlayDrive.Outcome.PLAYING
@@ -814,11 +767,78 @@ class ConnectorRepository @Inject constructor(
         }
 
         /**
+         * The pre-load of a cold start (see [ColdPreload]): the card is loaded once for nothing, with the volume at 0 and
+         * without the end guard. The app watches until another song than ours plays (the old queue of Amazon replaced the
+         * card) or 15 s are over, and the screen counts down. Our own song that plays is ignored. Then it pauses. The real
+         * load follows.
+         */
+        suspend fun preloadColdSession() {
+            val handle = sessionWatcher.open()
+            val begin = SystemClock.elapsedRealtime()
+            VolumeDuck.duck(context, ColdPreload.DUCK_MAX_MS)
+            DebugLog.log("preload", "start", mapOf("observeMs" to ColdPreload.OBSERVE_MS, "duckMaxMs" to ColdPreload.DUCK_MAX_MS))
+            var reason = "time is up"
+            try {
+                val sent = if (amazonId != null) sendId(handle.controller(), amazonId, title, artist)
+                else sendSearch(handle.controller(), title, artist, album)
+                if (!sent) {
+                    reason = "not sent"
+                } else {
+                    var shown = -1
+                    var found = false
+                    while (!found && !ColdPreload.over(begin, SystemClock.elapsedRealtime())) {
+                        val left = ColdPreload.secondsLeft(begin, SystemClock.elapsedRealtime())
+                        if (left != shown) {
+                            shown = left
+                            _playStatus.value = PlayStatus.preload(left)
+                        }
+                        val snap = try {
+                            withTimeoutOrNull(250L) { handle.events.receive() }?.snapshot
+                        } catch (_: ClosedReceiveChannelException) {
+                            reason = "listener closed"
+                            break
+                        } ?: continue
+                        val item = if (amazonId != null) PlayFlow.classify(snap.mediaId, amazonId) else when {
+                            !snap.hasTitle -> PlayFlow.Item.NONE
+                            TitleMatch.same(snap.title, title) -> PlayFlow.Item.OURS
+                            else -> PlayFlow.Item.FOREIGN
+                        }
+                        DebugLog.log(
+                            "preload", "snapshot",
+                            mapOf("ms" to SystemClock.elapsedRealtime() - begin, "state" to stateName(snap.state),
+                                "positionMs" to snap.positionMs, "mediaId" to snap.mediaId, "title" to snap.title,
+                                "item" to item.name.lowercase())
+                        )
+                        if (ColdPreload.isBadBoy(snap.state, item)) {
+                            found = true
+                            reason = "another song plays"
+                        }
+                    }
+                }
+            } finally {
+                handle.close()
+            }
+            try {
+                amazonController()?.transportControls?.pause()
+            } catch (e: Throwable) {
+                DebugLog.log("preload", "pause threw", mapOf("error" to e))
+            }
+            DebugLog.log("preload", "done", mapOf("reason" to reason, "elapsedMs" to SystemClock.elapsedRealtime() - begin))
+            // the 15 s timeout of the volume starts anew for the real load
+            VolumeDuck.duck(context)
+        }
+
+        /**
          * The session exists: the id route for a card with an id, a web address of the track with the parameter
          * `agent=google` that the session hands to Amazon Music, so the track is loaded without opening a screen.
          * Then the text search (up to 3 tries, 1.5 s apart).
          */
         suspend fun askSession(): Boolean {
+            // for 20 s a foreign item that replaces our song is paused by the guard and the card is loaded again, once
+            endGuard.armReload {
+                val c = amazonController()
+                if (amazonId != null) sendId(c, amazonId, title, artist) else sendSearch(c, title, artist, album)
+            }
             if (amazonId != null) {
                 stepsRun += "i"
                 if (idRoute(amazonId)) return true
@@ -847,6 +867,8 @@ class ConnectorRepository @Inject constructor(
                 session = tried && waitForSession("a-intent", LAUNCH_WAIT_MS)
             }
             if (session) {
+                // an empty session gets the card once for nothing (volume 0), then the real load
+                if (ColdPreload.needed(amazonController()?.playbackState?.state)) preloadColdSession()
                 askSession()
             }
         }
@@ -882,7 +904,6 @@ class ConnectorRepository @Inject constructor(
             title, artist, year, card,
             shown?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID), shown?.getString(MediaMetadata.METADATA_KEY_TITLE), amazonId, album
         )
-        endGuard.arm("song started")
         // last: if an Amazon Music screen was opened on the way, this app's screen goes back to the front
         launchBringBack(stepsRun)
         val now = SystemClock.elapsedRealtime()
@@ -898,32 +919,13 @@ class ConnectorRepository @Inject constructor(
         Result.success(PlayAnswer(true, null, winner, shown?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID)))
     }
 
-    /**
-     * "Scan next card": the song of the card is stopped like by the Stop button (pause, rewind to the start
-     * offset) and the guard is disarmed, in this order, before the camera comes back.
-     * Takes about as long as the Stop button, at most 2.5 s. A later scan stops again before its own request.
-     */
-    suspend fun stopForNextCard() = withContext(Dispatchers.IO) {
-        val controller = amazonController()
-        val stop = LeaveScreen.shouldStop(playedHere = true, hasSession = controller != null)
-        DebugLog.log(
-            "leave", "next card: stop",
-            mapOf("stopping" to stop, "session" to controller?.let { describe(it) }, "songEnded" to endGuard.songEnded.value)
-        )
-        try {
-            if (stop && controller != null) {
-                val moved = kotlinx.coroutines.withTimeoutOrNull(2_500L) { pauseAndRewind(controller) }
-                stoppedByUser = true
-                DebugLog.log("leave", "next card: stopped", mapOf("fromS" to moved?.first, "toS" to moved?.second, "timedOut" to (moved == null)))
-            }
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            DebugLog.log("leave", "next card: stop failed", mapOf("error" to e))
-        }
-        endGuard.disarm("next card")
-        VolumeDuck.restore(context, "next card")
+    /** Puts the volume back if this app ducked it (see [VolumeDuck]), for a screen that ends without a new song. */
+    fun restoreVolume(reason: String) {
+        VolumeDuck.restore(context, reason)
     }
+
+    /** Play Mode or Quiz Mode opened: the end guard listens while the screen is open. */
+    fun startGuard() = endGuard.start()
 
     /** Calls the controller, and logs the call and what the session says a moment later. */
     private suspend fun ctl(controller: MediaController, name: String, arg: Any?, call: (MediaController) -> Unit) {
@@ -989,7 +991,7 @@ class ConnectorRepository @Inject constructor(
             } catch (e: Throwable) {
                 DebugLog.log("leave", "stop failed", mapOf("error" to e))
             }
-            endGuard.disarm("screen left")
+            endGuard.stop("screen left")
             VolumeDuck.restore(context, "screen left")
         }
     }
@@ -1019,7 +1021,6 @@ class ConnectorRepository @Inject constructor(
     /** The whole start sequence for the song of the card: stop-confirm, load, pause, seek, play. */
     private suspend fun replayStoredSong(song: LastSong?): Result<PlayerPosition> {
         if (song == null) return Result.failure(Exception("Nothing to play again."))
-        stopAndConfirm()
         val result = play(song.title, song.artist, song.year, song.card, song.amazonId, song.album)
         val now = amazonController()
         return if (result.isSuccess && now != null) Result.success(snapshot(now)) else Result.failure(
@@ -1109,8 +1110,7 @@ class ConnectorRepository @Inject constructor(
                         ctl(controller, "play", null) { it.transportControls.play() }
                     }
                     "stop" -> {
-                        // pause AND back to the start offset, the guard is disarmed
-                        endGuard.disarm("user stop")
+                        // pause AND back to the start offset
                         val (from, rewoundTo) = pauseAndRewind(controller)
                         stoppedByUser = true
                         DebugLog.log(
@@ -1122,13 +1122,8 @@ class ConnectorRepository @Inject constructor(
                     "state" -> Unit // only reads, the pause at the end is done by the guard
                     else -> return@withContext Result.failure(Exception("Unknown action: $action"))
                 }
-                // the playhead moved or the song plays again: the guard watches the new situation
-                val wasStopped = stoppedByUser
-                if (action == "back10" || action == "forward10" || action == "restart" || action == "seek" || action == "play") {
+                        if (action == "back10" || action == "forward10" || action == "restart" || action == "seek" || action == "play") {
                     stoppedByUser = false
-                }
-                if (action == "back10" || action == "forward10" || action == "restart" || action == "seek" || (action == "play" && wasStopped)) {
-                    endGuard.arm("control $action")
                 }
                 if (action == "state") {
                     val after = snapshot(controller)

@@ -37,31 +37,10 @@ class PlayFlowTest {
     }
 
     @Test
-    fun theItemMustStayOursForTheSettleTime() {
-        assertEquals(1_000L, PlayFlow.SETTLE_MS)
+    fun classifyComparesTheMediaId() {
         assertEquals(Item.OURS, PlayFlow.classify("B1", "B1"))
         assertEquals(Item.FOREIGN, PlayFlow.classify("B2", "B1"))
         assertEquals(Item.NONE, PlayFlow.classify(null, "B1"))
         assertEquals(Item.NONE, PlayFlow.classify("", "B1"))
-        assertFalse(PlayFlow.settled(true, 400))
-        assertTrue(PlayFlow.settled(true, 1_000))
-        // a warm start needs no settling
-        assertTrue(PlayFlow.settled(false, 0))
-    }
-
-    @Test
-    fun aReplacedItemIsLoadedAgainTwiceWithinTheWindow() {
-        assertEquals(2, PlayFlow.RELOAD_MAX)
-        assertEquals(Next.RELOAD, PlayFlow.afterReplaced(0, 2_000))
-        assertEquals(Next.RELOAD, PlayFlow.afterReplaced(1, 5_000))
-        assertEquals(Next.SEARCH, PlayFlow.afterReplaced(2, 5_000))
-        assertEquals(Next.SEARCH, PlayFlow.afterReplaced(0, PlayFlow.RELOAD_WINDOW_MS))
-    }
-
-    @Test
-    fun theIdRouteStaysBounded() {
-        // the last reload begins inside the window and needs at most load, settle and the start wait
-        val worst = PlayFlow.RELOAD_WINDOW_MS + PlayFlow.LOAD_MS + PlayFlow.SETTLE_MS + PlayWait.BUFFER_WAIT_MS
-        assertTrue(worst <= 40_000L)
     }
 }

@@ -11,8 +11,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Sets the volume level of the music stream to 0 while a song loads and puts it back after the song was
- * moved to its start offset and play() was sent. Nobody hears the first moments of the song then. The
+ * Sets the volume level of the music stream to 0 when a card is loaded and puts it back when the song plays at
+ * its start offset. Nobody hears the first moments of the song then. The
  * mute flag of the stream is not used.
  *
  * The duck needs a start position: with the start position Off the song is not moved, and nothing is ducked.
@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
  * too.
  *
  * Safety: the level is written to disk (commit) before it is changed. [restore] runs on every way out of a
- * request, once more by a hard timeout of [DUCK_MAX_MS], and at the start of the app if it was killed while
+ * request, once more by the timeout of [LOAD_MAX_MS] ("something went totally wrong"), and at the start of the app if it was killed while
  * the level was 0. A level that the user changed meanwhile is left alone.
  */
 object VolumeDuck {
@@ -31,8 +31,8 @@ object VolumeDuck {
     private const val KEY_SAVED = "saved_level"
     private const val KEY_ENABLED = "enabled"
 
-    /** The longest time the level stays at 0, the timer restores by itself. */
-    const val DUCK_MAX_MS = 20_000L
+    /** The longest time the level stays at 0 after a load, the timer restores by itself and does nothing else. */
+    const val LOAD_MAX_MS = 15_000L
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + Safe.handler)
     private var timeout: Job? = null
@@ -49,9 +49,12 @@ object VolumeDuck {
         prefs(context).edit().putBoolean(KEY_ENABLED, enabled).apply()
     }
 
-    /** Called at the start of every request for a card, after [StreamGuard.ensureAudible]. */
+    /**
+     * Called at the start of every request for a card, after [StreamGuard.ensureAudible], and again when the load begins.
+     * [maxMs] is the timeout that puts the level back by itself, a duck that is still on restarts it.
+     */
     @Synchronized
-    fun duck(context: Context) {
+    fun duck(context: Context, maxMs: Long = LOAD_MAX_MS) {
         try {
             val audio = audio(context)
             val current = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
@@ -62,14 +65,14 @@ object VolumeDuck {
                 DuckPolicy.OnDuck.SKIP -> DebugLog.log("duck", "level is 0 already, nothing to duck")
                 DuckPolicy.OnDuck.KEEP -> {
                     DebugLog.log("duck", "still ducked, the remembered level stays", mapOf("saved" to state.pending))
-                    startTimer(context)
+                    startTimer(context, maxMs)
                 }
                 DuckPolicy.OnDuck.DUCK -> {
                     state.remember(current)
                     prefs(context).edit().putInt(KEY_SAVED, current).commit() // before the change, so a kill in between leaves it
                     audio.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
                     DebugLog.log("duck", "ducked", mapOf("level" to current, "max" to audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)))
-                    startTimer(context)
+                    startTimer(context, maxMs)
                 }
             }
         } catch (e: Throwable) {
@@ -114,11 +117,11 @@ object VolumeDuck {
         prefs(context).edit().remove(KEY_SAVED).commit()
     }
 
-    private fun startTimer(context: Context) {
+    private fun startTimer(context: Context, maxMs: Long) {
         timeout?.cancel()
         val app = context.applicationContext
         timeout = scope.launch {
-            delay(DUCK_MAX_MS)
+            delay(maxMs)
             restore(app, "hard timeout")
         }
     }

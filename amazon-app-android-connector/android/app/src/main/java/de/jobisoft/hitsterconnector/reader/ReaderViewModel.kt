@@ -53,14 +53,6 @@ data class ReaderUiState(
     val scanned: Int = 0,
     /** A short line for the screen, for example when there is nothing to export. */
     val message: String? = null,
-    /** "Send to Amazon Music app": where it stands, the error if it failed, and whether the song has ended. */
-    val send: SendStatus = SendStatus.IDLE,
-    val sendError: String? = null,
-    val songEnded: Boolean = false,
-    /** The line of the play request under the sending text ("loading", "buffering" ...), null for none. */
-    val playStatus: String? = null,
-    /** Why sending is not possible (Amazon Music missing, no notification access), null if it is. */
-    val amazonProblem: String? = null,
     /** This build can read the back of a card (OCR). The buttons and the overlay for unknown cards exist only then. */
     val ocrAvailable: Boolean = false,
     /** The OCR mode: the back of an unknown card (or of the card to be read again) is looked for. Scans are ignored meanwhile. */
@@ -78,8 +70,8 @@ data class ReaderUiState(
 /**
  * Reader mode: scan a card, see artist, year and title from our CSV at once. If something is wrong the user
  * reports it with "Report as wrong" (the same component as in the game, it goes through the [ReaderStore]:
- * `reader_results.csv`, the correction and the debug log), if not the next card is scanned. A scan plays
- * nothing, only the button "Send to Amazon Music app" plays the shown card.
+ * `reader_results.csv`, the correction and the debug log), if not the next card is scanned. The mode plays
+ * nothing and does not talk to Amazon Music.
  */
 @HiltViewModel
 class ReaderViewModel @Inject constructor(
@@ -89,15 +81,13 @@ class ReaderViewModel @Inject constructor(
     private val store: ReaderStore,
     private val overlay: ReportOverlayState,
     private val csvRepository: CSVRepository,
-    private val cardSetNames: CardSetNames,
-    private val connectorRepository: ConnectorRepository
+    private val cardSetNames: CardSetNames
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
         ReaderUiState(
             ocrAvailable = BuildConfig.OCR_ENABLED,
-            counters = store.counters.value,
-            amazonProblem = SendToAmazon.problem(connectorRepository.isAmazonMusicInstalled(), connectorRepository.hasNotificationAccess())
+            counters = store.counters.value
         )
     )
     val state: StateFlow<ReaderUiState> = _state.asStateFlow()
@@ -113,10 +103,6 @@ class ReaderViewModel @Inject constructor(
     private var lastReadAt = 0L
     private var serial = 0
 
-    /** A song was sent from this screen: leaving has something to stop. */
-    private var played = false
-    private var leaving = false
-
     init {
         viewModelScope.launch { store.counters.collect { c -> _state.value = _state.value.copy(counters = c) } }
         // a report was saved for the card that is shown: its values and the mark "corrected" are current at once
@@ -130,76 +116,6 @@ class ReaderViewModel @Inject constructor(
                 )
             }
         }
-        // the song ended: the screen says so
-        viewModelScope.launch { connectorRepository.songEnded.collect { e -> _state.value = _state.value.copy(songEnded = e) } }
-        viewModelScope.launch {
-            connectorRepository.playStatus.collect { status ->
-                if (_state.value.send == SendStatus.SENDING) _state.value = _state.value.copy(playStatus = status)
-            }
-        }
-    }
-
-    /** Look again whether Amazon Music is ready, for example after the user came back from the settings. */
-    fun refreshAmazon() {
-        _state.value = _state.value.copy(
-            amazonProblem = SendToAmazon.problem(connectorRepository.isAmazonMusicInstalled(), connectorRepository.hasNotificationAccess())
-        )
-    }
-
-    /**
-     * "Send to Amazon Music app": the shown card (with the corrected title and artist, as shown) goes through
-     * the same play path as the game: stop of the song that plays and its confirmation, load, pause,
-     * seek to the start offset, play, the end guard armed. The user stays here and the card stays.
-     */
-    fun sendToAmazon() {
-        val s = _state.value
-        val card = s.card ?: return
-        if (leaving || !SendToAmazon.enabled(true, s.amazonProblem, s.send)) return
-        played = true
-        _state.value = s.copy(send = SendStatus.SENDING, sendError = null, playStatus = null)
-        sendJob = viewModelScope.launch {
-            connectorRepository.markScan()
-            connectorRepository.stopAndConfirm()
-            if (leaving) return@launch
-            val result = connectorRepository.play(card.title, card.artist, card.year, card.setFile + "#" + card.number, card.amazonId, card.album)
-            if (leaving) return@launch
-            _state.value = _state.value.copy(
-                send = if (result.isSuccess) SendStatus.PLAYING else SendStatus.FAILED,
-                playStatus = null,
-                sendError = result.exceptionOrNull()?.message
-            )
-        }
-    }
-
-    private var sendJob: kotlinx.coroutines.Job? = null
-
-    /**
-     * A new card was scanned: the song that "Send to Amazon Music app" started is stopped like with the Stop
-     * button (pause and back to the start offset, guard disarmed), the status line is cleared and
-     * the button is usable again. A send under way is cancelled first. Nothing was sent from here: nothing happens.
-     */
-    private fun stopSongOfTheButton() {
-        val s = _state.value
-        if (leaving || !SendToAmazon.stopsOnScan(s.send)) return
-        sendJob?.cancel()
-        sendJob = null
-        connectorRepository.leaveScreen(playedHere = true)
-        _state.value = s.copy(send = SendStatus.IDLE, sendError = null, songEnded = false, playStatus = null)
-    }
-
-    /**
-     * The reader is left (the Back button, the system back, the screen destroyed): the song is stopped (pause and
-     * rewind) and the end guard disarmed, like on the control screen. Once.
-     */
-    fun leave() {
-        if (leaving) return
-        leaving = true
-        connectorRepository.leaveScreen(playedHere = played)
-    }
-
-    override fun onCleared() {
-        leave()
-        super.onCleared()
     }
 
     // ── a scan ────────────────────────────────────────────────────────────────────
@@ -216,7 +132,6 @@ class ReaderViewModel @Inject constructor(
         }
         lastCode = raw
         lastReadAt = at
-        stopSongOfTheButton()
         val mine = ++serial
         viewModelScope.launch {
             val url = QRCodeParser.parseHitsterUrl(raw)
@@ -326,7 +241,6 @@ class ReaderViewModel @Inject constructor(
     fun startOcrForShownCard() {
         val card = _state.value.card ?: return
         if (!_state.value.ocrAvailable) return
-        stopSongOfTheButton()
         startOcr(++serial, PendingCard(card.setFile, card.number))
     }
 

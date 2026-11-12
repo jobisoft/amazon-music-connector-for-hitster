@@ -65,6 +65,9 @@ object GuardReactor {
         val endReason: String = END_PAUSED
     )
 
+    /** True if a song is expected (see EndGuard.expect). Without one the guard does nothing. */
+    fun hasSong(ctx: Ctx): Boolean = ctx.guardedId != null || ctx.guardedTitle != null
+
     private fun otherItem(ctx: Ctx, s: SessionSnapshot): Boolean =
         (s.mediaId != null || s.title != null) && !SongIdentity.same(ctx.guardedId, ctx.guardedTitle, s.mediaId, s.title)
 
@@ -75,6 +78,7 @@ object GuardReactor {
      */
     fun track(ctx: Ctx, snapshot: SessionSnapshot?, nowMs: Long): Ctx {
         val s = snapshot ?: return ctx
+        if (!hasSong(ctx)) return ctx
         if (otherItem(ctx, s)) return ctx
         if (s.state != PlaybackState.STATE_PLAYING && s.state != PlaybackState.STATE_PAUSED &&
             s.state != PlaybackState.STATE_BUFFERING
@@ -99,6 +103,7 @@ object GuardReactor {
 
     fun onSnapshot(ctx: Ctx, snapshot: SessionSnapshot?, nowMs: Long): Decision {
         val s = snapshot ?: return Decision()
+        if (!hasSong(ctx)) return Decision()
         val canPause = ctx.pausesSent < PAUSES_MAX
 
         if (otherItem(ctx, s)) {
@@ -137,6 +142,7 @@ object GuardReactor {
      */
     fun onTimer(ctx: Ctx, snapshot: SessionSnapshot?, nowMs: Long): Decision {
         val s = snapshot ?: return Decision()
+        if (!hasSong(ctx)) return Decision()
         val near = s.state == PlaybackState.STATE_PLAYING && !otherItem(ctx, s) && !ctx.ended &&
             ctx.pausesSent < PAUSES_MAX && s.durationS >= EndDecision.MIN_DURATION_S &&
             s.positionS(nowMs) >= s.durationS - EndDecision.END_ZONE_S - TIMER_TOLERANCE_S

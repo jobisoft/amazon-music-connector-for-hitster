@@ -348,4 +348,31 @@ class GuardReactorTest {
         assertTrue(d.endNow)
         assertEquals(GuardReactor.END_PAUSED, d.endReason)
     }
+
+    // ── no expected song: the guard does nothing ───────────────────────────────
+
+    private val nothing = GuardReactor.Ctx(null, null)
+
+    @Test
+    fun withoutAnExpectedSongNothingIsPausedWhateverPlays() {
+        assertFalse(GuardReactor.hasSong(nothing))
+        val d = GuardReactor.onSnapshot(nothing, snap(id = "B0OLD", title = "Old"), now)
+        assertNull(d.pause)
+        assertFalse(d.endNow)
+        assertNull(d.timerMs)
+    }
+
+    @Test
+    fun withoutAnExpectedSongTheTimerAndTheTrackingDoNothing() {
+        assertEquals(nothing, GuardReactor.track(nothing, snap(), now))
+        val d = GuardReactor.onTimer(nothing, snap(positionMs = 199_000L), now)
+        assertNull(d.pause)
+        assertFalse(d.endNow)
+    }
+
+    @Test
+    fun anExpectedSongIsGuardedAsBefore() {
+        assertTrue(GuardReactor.hasSong(ctx))
+        assertEquals(Why.SWITCH, GuardReactor.onSnapshot(ctx, snap(id = "B0OLD", title = "Old"), now).pause)
+    }
 }

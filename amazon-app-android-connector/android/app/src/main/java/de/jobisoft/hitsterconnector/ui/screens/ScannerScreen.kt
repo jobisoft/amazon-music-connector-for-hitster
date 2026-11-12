@@ -2,6 +2,7 @@ package de.jobisoft.hitsterconnector.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.SystemClock
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -21,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,6 +39,8 @@ import de.jobisoft.hitsterconnector.ui.components.SquareScanWindow
 import de.jobisoft.hitsterconnector.ui.viewmodel.GameViewModel
 import de.jobisoft.hitsterconnector.ui.viewmodel.SendState
 import de.jobisoft.hitsterconnector.util.QRCodeParser
+import de.jobisoft.hitsterconnector.util.ScanTimeout
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,6 +77,25 @@ fun ScannerScreen(
         }
     }
 
+    // The camera timeout: it starts when the camera turns on (the screen opens, "Scan next card", Cancel). A scan ends it.
+    // It runs out: back to the main screen, the volume is back (leave).
+    val cameraOn = uiState.sendState == SendState.IDLE && hasPermission
+    var secondsLeft by remember { mutableIntStateOf(ScanTimeout.SECONDS) }
+    LaunchedEffect(cameraOn) {
+        if (!cameraOn) return@LaunchedEffect
+        val startedAt = SystemClock.elapsedRealtime()
+        while (true) {
+            val now = SystemClock.elapsedRealtime()
+            secondsLeft = ScanTimeout.remainingSeconds(startedAt, now)
+            if (ScanTimeout.expired(startedAt, now)) {
+                viewModel.leave()
+                onNavigateBack()
+                return@LaunchedEffect
+            }
+            delay(250)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Play Mode") })
@@ -93,7 +117,6 @@ fun ScannerScreen(
                     onCancel = viewModel::cancelSending,
                     onBack = {
                         viewModel.leave() // stops the song, the navigation does not wait for it
-                        viewModel.reset()
                         onNavigateBack()
                     }
                 )
@@ -125,6 +148,15 @@ fun ScannerScreen(
                                 }
                             }
                         }
+                    }
+
+                    if (hasPermission) {
+                        Text(
+                            "Scan within $secondsLeft s",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 8.dp)
+                        )
                     }
 
                     BackButton(

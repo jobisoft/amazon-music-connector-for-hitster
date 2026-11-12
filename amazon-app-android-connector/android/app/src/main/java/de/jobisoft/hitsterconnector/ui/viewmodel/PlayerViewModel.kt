@@ -78,6 +78,9 @@ abstract class PlayerViewModel(
     private var cardCounter = 0
 
     init {
+        // the scan mode starts: the end guard listens while the screen is open, a song that plays is paused (fire and forget)
+        connectorRepository.startGuard()
+        connectorRepository.pauseSong()
         viewModelScope.launch {
             reports.collect { row ->
                 val ref = _uiState.value.cardRef ?: return@collect
@@ -123,13 +126,11 @@ abstract class PlayerViewModel(
     }
 
     /**
-     * Stops the song that plays and waits for the player to confirm, then switches to the "sending"
-     * screen. Until then the screen stays as it is. A stop that is not confirmed does not hold
-     * anything up. Call after [markStopping].
+     * Switches to the "sending" screen. The song that plays was paused when the scan mode started, nothing is stopped
+     * or waited for here. Call after [markStopping].
      */
     protected suspend fun stopThenBeginSending(): Boolean {
         pollJob?.cancel() // the old song is not asked about any more
-        connectorRepository.stopAndConfirm()
         if (leaving) return false // the screen was left meanwhile: no new card
         beginSending()
         stopping = false
@@ -259,39 +260,36 @@ abstract class PlayerViewModel(
     }
 
     /**
-     * "Scan next card": the song of this card is stopped like by the Stop button, then the camera comes back.
-     * Scans and taps do nothing while the stop is on its way.
+     * "Scan next card": the song of this card is paused (fire and forget), then the camera comes back. The scan mode
+     * starts again, with its camera timeout.
      */
     fun nextCard() {
-        if (!markStopping()) return
-        viewModelScope.launch {
-            pollJob?.cancel()
-            connectorRepository.stopForNextCard()
-            stopping = false
-            reset()
-        }
+        if (leaving) return
+        pollJob?.cancel()
+        connectorRepository.pauseSong()
+        stopping = false
+        reset()
     }
 
     /**
-     * Cancel on the sending screen: the request ends, Amazon Music is stopped like by "Scan next card", the sound
-     * is back on, and the screen before the scan comes back (the camera).
+     * Cancel on the sending screen: the request ends, the song is paused (only that), the volume is back, and the
+     * camera comes back. On the unknown card screen nothing was sent, the camera comes back at once.
      */
     fun cancelSending() {
-        // an unknown card: nothing was sent, the camera comes back at once
-        if (_uiState.value.sendState == SendState.UNKNOWN) {
+        val sendState = _uiState.value.sendState
+        if (sendState == SendState.UNKNOWN) {
+            connectorRepository.pauseSong()
             reset()
             return
         }
-        if (_uiState.value.sendState != SendState.SENDING || stopping) return
-        stopping = true
+        if (sendState != SendState.SENDING) return
         played = true
         sendJob?.cancel()
         cancelOffer?.cancel()
-        viewModelScope.launch {
-            connectorRepository.stopForNextCard()
-            stopping = false
-            reset()
-        }
+        connectorRepository.pauseSong()
+        connectorRepository.restoreVolume("cancel")
+        stopping = false
+        reset()
     }
 
     /** Cancel in a mode without a camera: the request ends and the screen is left like by Back. */

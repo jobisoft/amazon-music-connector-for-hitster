@@ -74,14 +74,6 @@ fun ReaderScreen(
 
     val scroll = rememberScrollState()
 
-    // the user may come back from the settings (notification access) or have installed the app
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshAmazon() }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
     var hasPermission by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
     }
@@ -141,7 +133,7 @@ fun ReaderScreen(
                 when {
                     ui.ocr != null -> OcrBanner(ui.ocr!!, onCancel = viewModel::cancelOcr)
                     ui.unknown != null -> UnknownCardPanel(ui.unknown!!, ui.ocrAvailable, onAdd = viewModel::addUnknown)
-                    card != null -> CardResult(card, ui, onSend = viewModel::sendToAmazon, onOcr = if (ui.ocrAvailable) viewModel::startOcrForShownCard else null)
+                    card != null -> CardResult(card, onOcr = if (ui.ocrAvailable) viewModel::startOcrForShownCard else null)
                     ui.error != null -> ErrorBoxes(ui.error!!)
                     else -> Text(
                         ui.message ?: "Scan a card",
@@ -154,7 +146,6 @@ fun ReaderScreen(
             }
             BackButton(
                 onClick = {
-                    viewModel.leave() // stops a song sent from here and ends the end guard
                     onNavigateBack()
                 },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -254,7 +245,7 @@ private fun greenColor(): Color = if (isSystemInDarkTheme()) Color(0xFF81C784) e
  * "(card#N)". The box has a thin green border. The set name is a small caption above the box, a card with a correction of this phone says so.
  */
 @Composable
-private fun CardResult(card: ReaderCard, ui: ReaderUiState, onSend: () -> Unit, onOcr: (() -> Unit)? = null) {
+private fun CardResult(card: ReaderCard, onOcr: (() -> Unit)? = null) {
     val accent = greenColor()
     val text = MaterialTheme.colorScheme.onSurface
 
@@ -286,21 +277,5 @@ private fun CardResult(card: ReaderCard, ui: ReaderUiState, onSend: () -> Unit, 
             note = ReaderLogic.UPDATES_NOTE,
             onOcr = onOcr
         )
-        // plays the card through the Amazon Music app, the user stays here and the card stays
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedButton(
-            onClick = onSend,
-            enabled = SendToAmazon.enabled(true, ui.amazonProblem, ui.send),
-            modifier = Modifier.fillMaxWidth().height(48.dp)
-        ) { Text("Send to Amazon Music app") }
-        ui.amazonProblem?.let {
-            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-        }
-        val line = SendToAmazon.statusLine(ui.send, ui.songEnded, ui.playStatus)
-        if (line.isNotEmpty()) Text(line, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp))
-        if (ui.send == SendStatus.FAILED && ui.sendError != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            ErrorBoxes(ui.sendError)
-        }
     }
 }

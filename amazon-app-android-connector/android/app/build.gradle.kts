@@ -48,7 +48,7 @@ android {
         // version code that only grows, so that Android accepts it as an update.
         // Without it (Android Studio) the app is a "dev" build.
         versionCode = (project.findProperty("buildVersionCode") as String?)?.toInt() ?: 1
-        versionName = "1.1.0-" + ((project.findProperty("buildStamp") as String?) ?: "dev")
+        versionName = "1.2.0-" + ((project.findProperty("buildStamp") as String?) ?: "dev")
         // only 64-bit ARM (every phone of the last years): the native library of ML Kit is 10 MB per processor type, the app is much
         // smaller without the others. Not for an emulator with x86 and not for an old 32-bit phone.
         ndk {

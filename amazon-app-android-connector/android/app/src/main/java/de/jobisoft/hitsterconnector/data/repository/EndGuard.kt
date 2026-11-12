@@ -35,27 +35,29 @@ import javax.inject.Singleton
 data class EndEvent(val song: String?, val reason: String)
 
 /**
- * Protects the card song of this app, from its start to the next request. It listens to the media session of
- * Amazon Music ([SessionWatcher]) and decides with [GuardReactor]. Nothing is polled.
+ * Protects the card song of this app. It runs while Play Mode or Quiz Mode is open ([start] when the screen opens,
+ * [stop] when it is left), listens to the media session of Amazon Music ([SessionWatcher]) and decides with
+ * [GuardReactor]. Nothing is polled.
+ *
+ * The song to protect is the expected song: [expect] sets it from the session when the card song plays (the
+ * first PLAYING report of the load), [clearExpected] clears it when the next card is loaded. Without an expected
+ * song the guard does nothing.
  *
  *  1. **The end.** Every report of the session re-plans one one-shot timer for the moment the playhead
  *     reaches the end zone ([EndDecision.END_ZONE_S] before the end). When it runs out the song is paused
  *     (not stopped), it counts as ended and [ended] fires. A report that shows the song playing inside the
  *     zone (somebody moved the playhead there and pressed play) is paused at once.
  *  2. **The switch detector**, the second safety net. If the session is on another item than the card song
- *     and plays or buffers, it pauses at once. This holds for the whole life of the card song, also after the song has
+ *     and plays or buffers, it pauses at once. This holds as long as the song is expected, also after the song has
  *     ended: Amazon may go on to the next item of its queue, and that must not be heard.
  *  3. **Switch or stop at the end.** If Amazon goes on to another item, or stops the card song, within the
  *     last [EndDecision.SWITCH_END_WINDOW_S] seconds, the song has ended as well and [ended] fires, also when
  *     the timer was not due yet. A switch in the middle of the song fires nothing.
+ *  4. **The reload.** [armReload] is called with the load of a card. For [RELOAD_WINDOW_MS] a foreign item that
+ *     replaces the expected song (Amazon's restored queue) is paused as in 2 and the card is loaded again, once.
  *
- * The guard never disarms itself, except for the watch timeout. It is disarmed by a new request (a scan, the
- * next quiz card, "Play again"), by the stop button, by leaving the screen, and after 30 minutes.
- *
- * It does not depend on any screen of the app. It has its own scope, and it runs as long as the process
- * lives, which the bound NotificationListenerService (notification access) keeps up while the app is in the
- * background or the screen is off. A partial wake lock keeps the CPU awake for the timer of the end (the pause
- * has to come on time, with the screen off as well).
+ * It does not depend on any screen of the app. It has its own scope. A partial wake lock keeps the CPU awake while it
+ * runs, so that the timer of the end fires with the screen off as well (the pause has to come on time).
  *
  * Every step is in the debug log with the tag "guard".
  */
@@ -64,9 +66,8 @@ class EndGuard @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) {
     companion object {
-        private const val WAKE_LOCK_MS = 35 * 60_000L
-        /** The guard disarms itself this long after its last [arm]. Every arm (a new song, a move of the playhead) starts the time anew. */
-        private const val WATCH_MAX_MS = 30 * 60_000L
+        /** The reload of a replaced song works this long after the load of a card. */
+        const val RELOAD_WINDOW_MS = 20_000L
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + Safe.handler)
@@ -80,7 +81,8 @@ class EndGuard @Inject constructor(
     private var watching = false
     private var handle: SessionWatcher.Handle? = null
     private var listenJob: Job? = null
-    private var watchJob: Job? = null
+    private var reloadJob: Job? = null
+    private var reloadFn: (() -> Unit)? = null
     private var timerJob: Job? = null
     private var ctx = GuardReactor.Ctx(null, null)
     private var switchPausedAt: Long? = null
@@ -95,37 +97,20 @@ class EndGuard @Inject constructor(
     /** True from the pause at the end of the song until the next request of the app. The screen may use it. */
     val songEnded: StateFlow<Boolean> = _songEnded.asStateFlow()
 
-    // ── arming ────────────────────────────────────────────────────────────────────
+    // ── start and stop ────────────────────────────────────────────────────────────
 
-    /**
-     * Guard the song that plays now. Call after the app started it, and after every move of the playhead
-     * (the song is then no longer at its end, the timer is planned again).
-     */
-    fun arm(reason: String) {
+    /** The screen of Play Mode or Quiz Mode opened: listen to the session. Nothing is expected yet. */
+    fun start() {
         synchronized(lock) {
-            val wasWatching = watching
-            stopListening()
+            if (watching) return
             val opened = watcher.open()
-            val first = opened.current()
-            if (first == null) {
-                opened.close()
-                watching = false
-                releaseWakeLock()
-                DebugLog.log("guard", "not armed, Amazon Music has no session", mapOf("reason" to reason))
-                return
-            }
             handle = opened
             watching = true
-            ctx = GuardReactor.Ctx(first.mediaId, first.title)
+            ctx = GuardReactor.Ctx(null, null)
             switchPausedAt = null
             _songEnded.value = false
             acquireWakeLock()
-            DebugLog.log(
-                "guard", if (wasWatching) "re-armed" else "armed",
-                mapOf("reason" to reason, "song" to first.title, "mediaId" to first.mediaId, "durationS" to first.durationS,
-                    "positionS" to first.positionS(SystemClock.elapsedRealtime()), "state" to first.state)
-            )
-            // the first report of the handle is the state right now, it plans the timer
+            DebugLog.log("guard", "started")
             listenJob = scope.launch {
                 try {
                     for (event in opened.events) onReport(opened, event.snapshot)
@@ -133,33 +118,77 @@ class EndGuard @Inject constructor(
                     opened.close()
                 }
             }
-            watchJob = scope.launch {
-                delay(WATCH_MAX_MS)
-                disarm("watch timeout")
-            }
         }
     }
 
-    /**
-     * A new request, the stop button, the screen left, the watch timeout: nothing to watch any more.
-     * The guard does not call this itself, except for the watch timeout.
-     */
-    fun disarm(reason: String) {
+    /** The screen was left: nothing to watch any more. */
+    fun stop(reason: String) {
         synchronized(lock) {
             if (!watching) return
             watching = false
             stopListening()
+            reloadJob?.cancel()
+            reloadJob = null
+            reloadFn = null
+            ctx = GuardReactor.Ctx(null, null)
             _songEnded.value = false
             releaseWakeLock()
-            DebugLog.log("guard", "disarmed", mapOf("reason" to reason))
+            DebugLog.log("guard", "stopped", mapOf("reason" to reason))
+        }
+    }
+
+    /**
+     * The card song plays: protect it from now on. [mediaId] and [title] are what the session shows for it. The state of
+     * the session right now plans the timer of the end.
+     */
+    fun expect(mediaId: String?, title: String?) {
+        synchronized(lock) {
+            if (!watching) return
+            ctx = GuardReactor.Ctx(mediaId, title)
+            switchPausedAt = null
+            _songEnded.value = false
+            timerJob?.cancel()
+            timerJob = null
+            DebugLog.log("guard", "expecting", mapOf("song" to title, "mediaId" to mediaId))
+            handle?.let { onReport(it, it.current()) }
+        }
+    }
+
+    /** The next card is loaded: the song of the last card is not expected any more, the guard does nothing until [expect]. */
+    fun clearExpected() {
+        synchronized(lock) {
+            if (!watching) return
+            ctx = GuardReactor.Ctx(null, null)
+            timerJob?.cancel()
+            timerJob = null
+            _songEnded.value = false
+            DebugLog.log("guard", "expected song cleared")
+        }
+    }
+
+    /**
+     * A card is loaded: for [RELOAD_WINDOW_MS] the first replacement of the expected song by a foreign item is paused and
+     * [reload] is called, once. The next call arms it again.
+     */
+    fun armReload(reload: () -> Unit) {
+        synchronized(lock) {
+            if (!watching) return
+            reloadFn = reload
+            reloadJob?.cancel()
+            reloadJob = scope.launch {
+                delay(RELOAD_WINDOW_MS)
+                synchronized(lock) {
+                    if (reloadFn != null) DebugLog.log("guard", "reload off, time is up")
+                    reloadFn = null
+                }
+            }
+            DebugLog.log("guard", "reload armed", mapOf("windowMs" to RELOAD_WINDOW_MS))
         }
     }
 
     private fun stopListening() {
         timerJob?.cancel()
         timerJob = null
-        watchJob?.cancel()
-        watchJob = null
         listenJob?.cancel() // its finally closes the handle
         listenJob = null
         handle = null
@@ -170,7 +199,7 @@ class EndGuard @Inject constructor(
             val lock = wakeLock ?: (context.getSystemService(Context.POWER_SERVICE) as PowerManager)
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "hitsterconnector:endguard").also { wakeLock = it }
             lock.setReferenceCounted(false)
-            lock.acquire(WAKE_LOCK_MS)
+            if (!lock.isHeld) lock.acquire()
         } catch (e: Throwable) {
             DebugLog.log("guard", "wake lock failed", mapOf("error" to e))
         }
@@ -247,6 +276,20 @@ class EndGuard @Inject constructor(
                 DebugLog.log("guard", "pause threw", mapOf("why" to why.name.lowercase(), "error" to e))
             }
             ctx = ctx.copy(pausesSent = ctx.pausesSent + 1)
+            if (why == GuardReactor.Why.SWITCH && !d.endNow) {
+                val reload = reloadFn
+                if (reload != null) {
+                    reloadFn = null
+                    reloadJob?.cancel()
+                    reloadJob = null
+                    DebugLog.log("guard", "reload", mapOf("to" to snapshot?.title, "toMediaId" to snapshot?.mediaId))
+                    try {
+                        reload()
+                    } catch (e: Throwable) {
+                        DebugLog.log("guard", "reload threw", mapOf("error" to e))
+                    }
+                }
+            }
             if (why == GuardReactor.Why.SWITCH) {
                 if (switchPausedAt == null) switchPausedAt = now
                 DebugLog.log(

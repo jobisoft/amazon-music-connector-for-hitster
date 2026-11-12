@@ -54,7 +54,6 @@ fun QuizScreen(
                 },
                 onBack = {
                     viewModel.leave() // stops the song, the navigation does not wait for it
-                    viewModel.reset()
                     onNavigateBack()
                 }
             )
