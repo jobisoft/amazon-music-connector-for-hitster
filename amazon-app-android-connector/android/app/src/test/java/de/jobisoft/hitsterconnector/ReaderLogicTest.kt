@@ -14,10 +14,10 @@ class ReaderLogicTest {
     private val file = "hitster-de-aaaa0075.csv"
 
     private fun row(card: Int, our: Int? = 2000, onCard: Int? = 1984, time: String = "2026-11-09T10:00:00") =
-        ResultRow(time, file, card, Verdict.WRONG, our, "Our Title", "Our Artist", onCard, "Our Title", "Our Artist", ourAmazonId = "", cardAmazonId = "")
+        ResultRow(time, file, card, Verdict.WRONG, our, "Our Title", "Our Artist", onCard, "Our Title", "Our Artist", ourAmazonId = "", cardAmazonId = "", ourAlbum = "", cardAlbum = "")
 
     private fun wrongRow(year: Int?, title: String?, artist: String?) =
-        ResultRow("t", file, 1, Verdict.WRONG, 2000, "Our Title", "Our Artist", year, title, artist, ourAmazonId = "", cardAmazonId = "")
+        ResultRow("t", file, 1, Verdict.WRONG, 2000, "Our Title", "Our Artist", year, title, artist, ourAmazonId = "", cardAmazonId = "", ourAlbum = "", cardAlbum = "")
 
     // ── the year on the card ───────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ class ReaderLogicTest {
             assertEquals(r, ReaderLogic.parseResultLine(ReaderLogic.resultLine(r)))
         }
         assertEquals(
-            "2026-11-09T10:00:00,$file,265,wrong,2008,Our Title,Our Artist,1984,Our Title,Our Artist,reader,,",
+            "2026-11-09T10:00:00,$file,265,wrong,2008,Our Title,Our Artist,1984,Our Title,Our Artist,reader,,,,",
             ReaderLogic.resultLine(row(265, 2008, 1984))
         )
     }
@@ -56,10 +56,10 @@ class ReaderLogicTest {
             "2026-11-09T10:00:00", file, 126, Verdict.WRONG, 2004,
             "(I've Had) The Time of My Life - From \"Dirty Dancing\", Soundtrack", "Bill Medley, Jennifer Warnes",
             1987, "The Time of My Life, \"Remastered\"", "Medley, Warnes & \"Friends\"",
-            ourAmazonId = "", cardAmazonId = ""
+            ourAmazonId = "", cardAmazonId = "", ourAlbum = "", cardAlbum = ""
         )
         val line = ReaderLogic.resultLine(r)
-        assertEquals(13, ReaderLogic.parseCsvLine(line).size)
+        assertEquals(15, ReaderLogic.parseCsvLine(line).size)
         assertEquals(r, ReaderLogic.parseResultLine(line))
     }
 
@@ -74,14 +74,14 @@ class ReaderLogicTest {
         assertEquals("scan", ReaderLogic.parseResultLine("t,$file,5,wrong,2000,T,A,1999,T2,A2,scan")!!.source) // 11 fields, source in the last one
         assertEquals("reader", ReaderLogic.parseResultLine("t,$file,5,2000,wrong,1999,0")!!.source) // a row with only seven fields
         assertEquals("reader", ReaderLogic.parseResultLine("t,$file,5,wrong,2000,T,A,1999,T2,A2,0,")!!.source) // empty field
-        assertTrue(ReaderLogic.RESULT_HEADER.endsWith(",cardArtist,source,ourAmazonId,cardAmazonId"))
+        assertTrue(ReaderLogic.RESULT_HEADER.endsWith(",cardArtist,source,ourAmazonId,cardAmazonId,ourAlbum,cardAlbum"))
     }
 
     @Test
     fun theAmazonIdsGoThereAndBackAtTheEndOfTheLine() {
         val r = row(103, 2006, 2006).copy(source = "scan", ourAmazonId = "", cardAmazonId = "B006LSV05O")
         val line = ReaderLogic.resultLine(r)
-        assertTrue(line.endsWith(",scan,,B006LSV05O"))
+        assertTrue(line.endsWith(",scan,,B006LSV05O,,"))
         assertEquals(r, ReaderLogic.parseResultLine(line))
         val cleared = row(103, 2006, 2006).copy(ourAmazonId = "B006LSV05O", cardAmazonId = "")
         assertEquals(cleared, ReaderLogic.parseResultLine(ReaderLogic.resultLine(cleared)))
@@ -99,6 +99,49 @@ class ReaderLogicTest {
         assertEquals("a row without the ids has nothing to say about the id", listOf("year", "title", "artist"), ReaderLogic.changed(r11))
         val r7 = ReaderLogic.parseResultLine("t,$file,5,2000,wrong,1999,0")!!
         assertNull(r7.cardAmazonId)
+    }
+
+    @Test
+    fun theAlbumsGoThereAndBackAtTheEndOfTheLine() {
+        val r = row(103, 2006, 2006).copy(ourAlbum = "Old Album", cardAlbum = "New, \"Album\"")
+        val line = ReaderLogic.resultLine(r)
+        assertEquals(15, ReaderLogic.parseCsvLine(line).size)
+        assertEquals(r, ReaderLogic.parseResultLine(line))
+        val cleared = row(103, 2006, 2006).copy(ourAlbum = "Old Album", cardAlbum = "")
+        assertEquals(cleared, ReaderLogic.parseResultLine(ReaderLogic.resultLine(cleared)))
+    }
+
+    @Test
+    fun oldRowsWithoutTheAlbumsAreStillRead() {
+        val r13 = ReaderLogic.parseResultLine("t,$file,5,wrong,2000,T,A,1999,T2,A2,scan,B006LSV05O,B00FU4OCDW")!!
+        assertEquals("B00FU4OCDW", r13.cardAmazonId)
+        assertNull(r13.ourAlbum)
+        assertNull(r13.cardAlbum)
+        assertEquals(listOf("year", "title", "artist", "amazonId"), ReaderLogic.changed(r13))
+        assertNull(ReaderLogic.parseResultLine("t,$file,5,wrong,2000,T,A,1999,T2,A2,scan")!!.cardAlbum)
+    }
+
+    @Test
+    fun theAlbumIsAChangedFieldWhenTheTwoDiffer() {
+        val base = wrongRow(2000, "Our Title", "Our Artist")
+        assertEquals(listOf("album"), ReaderLogic.changed(base.copy(ourAlbum = "", cardAlbum = "X")))
+        assertEquals(listOf("album"), ReaderLogic.changed(base.copy(ourAlbum = "X", cardAlbum = "")))
+        assertEquals(emptyList<String>(), ReaderLogic.changed(base.copy(ourAlbum = "X", cardAlbum = "X")))
+        assertEquals(emptyList<String>(), ReaderLogic.changed(base.copy(ourAlbum = null, cardAlbum = null)))
+    }
+
+    private fun editAlbum(albumText: String, ourAlbum: String? = null) =
+        ReaderLogic.evaluateEdit("2000", "Our Title", "Our Artist", 2000, "Our Title", "Our Artist", 2026, "", null, albumText, ourAlbum)
+
+    @Test
+    fun theAlbumCanBeTheOnlyChange() {
+        assertNull("nothing changed", editAlbum("", null))
+        assertNull("the same album", editAlbum("Same Album", "Same Album"))
+        assertNull("only spaces differ", editAlbum("  Same   Album ", "Same Album"))
+        assertEquals("New Album", editAlbum("  New\n Album ", null)!!.album)
+        assertEquals("replacing", "B", editAlbum("B", "A")!!.album)
+        assertEquals("clearing the album is a change", "", editAlbum("", "A")!!.album)
+        assertEquals("the other fields keep an empty album", "", edit("1984", "Our Title", "Our Artist")!!.album)
     }
 
     @Test

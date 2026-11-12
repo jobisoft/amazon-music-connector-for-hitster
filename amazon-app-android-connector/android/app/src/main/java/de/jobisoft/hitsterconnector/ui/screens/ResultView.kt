@@ -226,7 +226,7 @@ internal fun ResultView(
                     val ref = state.cardRef
                     if (ref != null && !state.isTestSong) {
                         ReportWrongSection(
-                            ReportCard(state.cardSerial, ref.setFile, ref.number, state.song.year, state.song.title, state.song.artist, state.song.amazonId),
+                            ReportCard(state.cardSerial, ref.setFile, ref.number, state.song.year, state.song.title, state.song.artist, state.song.amazonId, state.song.album),
                             state.revealed, reportSource
                         )
                     }

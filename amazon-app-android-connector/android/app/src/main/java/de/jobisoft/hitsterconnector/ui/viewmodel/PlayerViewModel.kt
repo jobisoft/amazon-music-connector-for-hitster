@@ -23,7 +23,7 @@ enum class SendState { IDLE, SENDING, SUCCESS, FAILED }
 data class CardRef(val setFile: String, val number: Int)
 
 /** What the reveal box shows once it is tapped. The year is null for the test song. */
-data class SongInfo(val title: String, val artist: String, val year: Int?, val amazonId: String? = null)
+data class SongInfo(val title: String, val artist: String, val year: Int?, val amazonId: String? = null, val album: String? = null)
 
 data class GameUiState(
     val sendState: SendState = SendState.IDLE,
@@ -86,8 +86,8 @@ abstract class PlayerViewModel(
                 val ref = _uiState.value.cardRef ?: return@collect
                 val song = _uiState.value.song ?: return@collect
                 if (!ReportRefresh.isFor(ref.setFile, ref.number, row)) return@collect
-                val v = ReportRefresh.values(song.year, song.title, song.artist, song.amazonId, row)
-                _uiState.value = _uiState.value.copy(song = SongInfo(v.title, v.artist, v.year, v.amazonId))
+                val v = ReportRefresh.values(song.year, song.title, song.artist, song.amazonId, song.album, row)
+                _uiState.value = _uiState.value.copy(song = SongInfo(v.title, v.artist, v.year, v.amazonId, v.album))
             }
         }
         viewModelScope.launch {
@@ -206,7 +206,7 @@ abstract class PlayerViewModel(
     ) {
         if (leaving) return
         sendJob = currentCoroutineContext()[Job]
-        val result = connectorRepository.play(mapping.title, mapping.artist, mapping.year, mapping.url, mapping.amazonId)
+        val result = connectorRepository.play(mapping.title, mapping.artist, mapping.year, mapping.url, mapping.amazonId, mapping.album)
         result.fold(
             onSuccess = { answer ->
                 _uiState.value = _uiState.value.copy(
@@ -220,7 +220,7 @@ abstract class PlayerViewModel(
                     status = null,
                     canCancel = false,
                     warning = warning,
-                    song = SongInfo(mapping.title, mapping.artist, if (isTestSong) null else mapping.year, mapping.amazonId),
+                    song = SongInfo(mapping.title, mapping.artist, if (isTestSong) null else mapping.year, mapping.amazonId, mapping.album),
                     setName = setName,
                     isTestSong = isTestSong,
                     revealed = false,

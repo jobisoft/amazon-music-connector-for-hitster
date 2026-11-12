@@ -93,6 +93,34 @@ class CorrectionLogicTest {
     }
 
     @Test
+    fun theAlbumColumnGoesThereAndBackWithAndWithoutAnId() {
+        val withBoth = override(103, 2006).copy(amazonId = "B006LSV05O", album = "The Album")
+        val noId = override(103, 2006).copy(album = "The Album")
+        val cleared = override(103, 2006).copy(amazonId = "", album = "")
+        val clearedAlbum = override(103, 2006).copy(album = "")
+        assertEquals("$set,103,2006,New Title,New Artist,t1,reader,B006LSV05O,The Album", CorrectionLogic.line(withBoth))
+        assertEquals("$set,103,2006,New Title,New Artist,t1,reader,-,The Album", CorrectionLogic.line(noId))
+        assertEquals("$set,103,2006,New Title,New Artist,t1,reader,,", CorrectionLogic.line(cleared))
+        for (o in listOf(withBoth, noId, cleared, clearedAlbum)) assertEquals(o, CorrectionLogic.parseLine(CorrectionLogic.line(o)))
+        assertNull("a row with an album but no id keeps the id", CorrectionLogic.parseLine(CorrectionLogic.line(noId))!!.amazonId)
+        // rows of older files have no album column: the album of the song stays
+        assertNull(CorrectionLogic.parseLine("$set,17,1984,T,A,t1,reader")!!.album)
+        assertNull(CorrectionLogic.parseLine("$set,17,1984,T,A,t1,reader,B006LSV05O")!!.album)
+        assertEquals("$set,17,1984,New Title,New Artist,t1,reader", CorrectionLogic.line(override(17, 1984)))
+    }
+
+    @Test
+    fun theAlbumOfACorrectionReplacesClearsOrKeepsTheAlbumOfTheSong() {
+        val withAlbum = song.copy(album = "Old Album")
+        assertEquals("Old Album", CorrectionLogic.apply(withAlbum, override(17, 1984)).album)
+        assertEquals("a row with old columns only", "Old Album", CorrectionLogic.apply(withAlbum, override(17, 1984).copy(amazonId = "B00FU4OCDW")).album)
+        assertEquals("New Album", CorrectionLogic.apply(withAlbum, override(17, 1984).copy(album = "New Album")).album)
+        assertEquals("New Album", CorrectionLogic.apply(song, override(17, 1984).copy(album = "New Album")).album)
+        assertNull("an empty album clears it", CorrectionLogic.apply(withAlbum, override(17, 1984).copy(album = "")).album)
+        assertEquals("the id is independent", "B006LSV05O", CorrectionLogic.apply(withAlbum, override(17, 1984).copy(album = "X")).amazonId)
+    }
+
+    @Test
     fun headerAndBrokenLinesAreNoCorrections() {
         assertNull(CorrectionLogic.parseLine(CorrectionLogic.HEADER))
         assertNull(CorrectionLogic.parseLine(""))
@@ -105,7 +133,7 @@ class CorrectionLogicTest {
     fun theExportHasTheHeaderAndTheLatestCorrectionPerCard() {
         val content = CorrectionLogic.exportContent(listOf(override(17, 1990, time = "t1"), override(17, 1984, time = "t2"), override(5, 2001)))
         val lines = content.trimEnd().lines()
-        assertEquals("set,card,year,title,artist,time,source,amazonId", lines[0])
+        assertEquals("set,card,year,title,artist,time,source,amazonId,album", lines[0])
         assertEquals(3, lines.size)
         assertTrue(lines[1].startsWith("$set,17,1984,"))
         assertTrue(lines[2].startsWith("$set,5,2001,"))
@@ -125,7 +153,7 @@ class CorrectionLogicTest {
 
     @Test
     fun anEmptyExportHasOnlyTheHeader() {
-        assertEquals("set,card,year,title,artist,time,source,amazonId\n", CorrectionLogic.exportContent(emptyList()))
+        assertEquals("set,card,year,title,artist,time,source,amazonId,album\n", CorrectionLogic.exportContent(emptyList()))
     }
 
     @Test

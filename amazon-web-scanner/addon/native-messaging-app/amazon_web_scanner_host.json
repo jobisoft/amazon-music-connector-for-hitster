@@ -1,0 +1,7 @@
+{
+  "name": "amazon_web_scanner_host",
+  "description": "Native helper for the Amazon Web Scanner add-on",
+  "path": "/path/to/native-messaging-app/amazon_web_scanner_host.py",
+  "type": "stdio",
+  "allowed_extensions": ["amazon-web-scanner@jobisoft.de"]
+}

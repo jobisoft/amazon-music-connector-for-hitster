@@ -40,9 +40,9 @@ import de.jobisoft.hitsterconnector.util.AmazonId
  * least one value differs from ours and all are valid ([ReaderLogic.evaluateEdit]). Shared by the reader
  * mode and the "Report as wrong" button of the game. A new [key] (a new card) resets the fields.
  *
- * Title and artist are multiline fields (2 to 4 lines, they grow with the text, Enter is a line break). The
+ * Title, artist and album are multiline fields (2 to 4 lines, they grow with the text, Enter is a line break). The
  * line breaks become one space on saving ([ReaderLogic.collapse]). The year stays a single-line number field.
- * The Amazon ID is a single-line field that takes a track ID or a pasted link of Amazon Music, empty means
+ * An empty album means no album. The Amazon ID is a single-line field that takes a track ID or a pasted link of Amazon Music, empty means
  * "search only" ([AmazonId.fromInput]). Text that is no ID shows an error under the field and "Save" stays off.
  *
  * "Cancel" and the system Back close only the overlay and discard the edits (the dialog window takes the
@@ -53,15 +53,17 @@ import de.jobisoft.hitsterconnector.util.AmazonId
 @Composable
 fun WrongDialog(
     key: Any, ourYear: Int?, ourTitle: String, ourArtist: String, ourAmazonId: String?,
+    ourAlbum: String? = null,
     onSave: (Edit) -> Unit, onCancel: () -> Unit
 ) {
     var artist by remember(key) { mutableStateOf(ourArtist) }
     var yearText by remember(key) { mutableStateOf(ourYear?.toString().orEmpty()) }
     var title by remember(key) { mutableStateOf(ourTitle) }
     var amazonIdText by remember(key) { mutableStateOf(ourAmazonId.orEmpty()) }
+    var albumText by remember(key) { mutableStateOf(ourAlbum.orEmpty()) }
     val amazonIdError = ReaderLogic.amazonIdError(amazonIdText)
     val edit = ReaderLogic.evaluateEdit(
-        yearText, title, artist, ourYear, ourTitle, ourArtist, ReaderLogic.currentYear(), amazonIdText, ourAmazonId
+        yearText, title, artist, ourYear, ourTitle, ourArtist, ReaderLogic.currentYear(), amazonIdText, ourAmazonId, albumText, ourAlbum
     )
 
     Dialog(
@@ -99,6 +101,16 @@ fun WrongDialog(
                         value = title,
                         onValueChange = { title = it },
                         label = { Text("Title on the card") },
+                        singleLine = false,
+                        minLines = 2,
+                        maxLines = 4,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Default),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = albumText,
+                        onValueChange = { albumText = it },
+                        label = { Text("Album") },
                         singleLine = false,
                         minLines = 2,
                         maxLines = 4,

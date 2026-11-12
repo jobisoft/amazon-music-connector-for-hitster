@@ -1,11 +1,12 @@
 # Amazon Music Connector for Hitster
 
-Scan a [Hitster](https://hitstergame.com) card with your Android phone and the song plays on Amazon Music. Amazon offers no public search API for private accounts, so this project controls Amazon Music itself, either the app on your phone or the web player in your browser.
+Scan a [Hitster](https://hitstergame.com) card with your Android phone and the song plays on Amazon Music. Amazon offers no public search API for private accounts, so this project controls the Amazon Music app on your phone.
 
 | Folder | What it is |
 | --- | --- |
 | [amazon-app-android-connector](amazon-app-android-connector) | The Android app. It plays through the Amazon Music app of the same phone. Play Mode, Quiz Mode, Reader Mode, player controls, adjustable start position. |
-| [amazon-web-desktop-connector](amazon-web-desktop-connector) | The Desktop connector. The phone talks to a helper on a computer and a Firefox add-on drives the Amazon Music web player. A first attempt, not developed further for now, and not published in the Firefox Add-on Store. |
-| [card-sets](card-sets) | The card sets (CSV) and their names, used by the Android apps. |
+| [card-sets](card-sets) | The card sets (CSV) and their names, used by the Android app. |
+| [amazon-web-scanner](amazon-web-scanner) | A tool that reads the Amazon Music web player to find the track id and album of every card. |
+| [assets](assets) | The data collected by the scanner. |
 
-Each app folder has its own README with the build steps.
+The app folder has its own README with the build steps.

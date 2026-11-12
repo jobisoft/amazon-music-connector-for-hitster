@@ -99,6 +99,7 @@ class CSVRepository @Inject constructor(
             val artistIndex = header.indexOf("artist")
             val yearIndex = header.indexOf("year")
             val amazonIdIndex = header.indexOf("amazonid")
+            val albumIndex = header.indexOf("album")
             if (cardIndex < 0 || titleIndex < 0 || artistIndex < 0) throw Exception(MISSING_COLUMNS)
 
             val songsByIndex = mutableMapOf<Int, CSVSong>()
@@ -114,7 +115,8 @@ class CSVRepository @Inject constructor(
                     title = title,
                     artist = artist,
                     year = columns.getOrNull(yearIndex)?.trim()?.toIntOrNull(),
-                    amazonId = columns.getOrNull(amazonIdIndex)?.trim()?.ifBlank { null }
+                    amazonId = columns.getOrNull(amazonIdIndex)?.trim()?.ifBlank { null },
+                    album = columns.getOrNull(albumIndex)?.trim()?.ifBlank { null }
                 )
             }
             return ParsedCSV(songsByIndex = songsByIndex)
@@ -187,6 +189,8 @@ data class CSVSong(
     val year: Int? = null,
     /** The Amazon track id of the song (column `AmazonID`, optional). The Android Amazon app plays it first. */
     val amazonId: String? = null,
+    /** The album of the song (column `Album`, optional). It goes along with a search, never with the track id. */
+    val album: String? = null,
     /** True if a correction of the user on this phone lies over the bundled values (see CardOverrides). */
     val corrected: Boolean = false
 )

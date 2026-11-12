@@ -45,16 +45,21 @@ object ReportRefresh {
     /** Is the report for the card that is shown? */
     fun isFor(setFile: String, card: Int, row: ResultRow): Boolean = row.setFile == setFile && row.card == card
 
-    /** The values of a card after a report. [amazonId] is null for no id. */
-    data class Values(val year: Int?, val title: String, val artist: String, val amazonId: String?)
+    /** The values of a card after a report. [amazonId] and [album] are null for none. */
+    data class Values(val year: Int?, val title: String, val artist: String, val amazonId: String?, val album: String?)
 
     /** The values after the report: what the user entered (a value the report does not have stays as it was). */
-    fun values(year: Int?, title: String, artist: String, amazonId: String?, row: ResultRow): Values = Values(
+    fun values(year: Int?, title: String, artist: String, amazonId: String?, album: String?, row: ResultRow): Values = Values(
         row.cardYear ?: year, row.cardTitle ?: title, row.cardArtist ?: artist,
         when {
             row.cardAmazonId == null -> amazonId
             row.cardAmazonId.isBlank() -> null
             else -> row.cardAmazonId
+        },
+        when {
+            row.cardAlbum == null -> album
+            row.cardAlbum.isBlank() -> null
+            else -> row.cardAlbum
         }
     )
 }

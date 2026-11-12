@@ -27,7 +27,9 @@ data class ReaderCard(
     val artist: String,
     val corrected: Boolean,
     /** The Amazon track id from the card set, played first if there is one. */
-    val amazonId: String? = null
+    val amazonId: String? = null,
+    /** The album from the card set, sent along with a search. */
+    val album: String? = null
 )
 
 data class ReaderUiState(
@@ -90,9 +92,9 @@ class ReaderViewModel @Inject constructor(
             store.saved.collect { row ->
                 val shown = _state.value.card ?: return@collect
                 if (!ReportRefresh.isFor(shown.setFile, shown.number, row)) return@collect
-                val v = ReportRefresh.values(shown.year, shown.title, shown.artist, shown.amazonId, row)
+                val v = ReportRefresh.values(shown.year, shown.title, shown.artist, shown.amazonId, shown.album, row)
                 _state.value = _state.value.copy(
-                    card = shown.copy(year = v.year, title = v.title, artist = v.artist, amazonId = v.amazonId, corrected = true)
+                    card = shown.copy(year = v.year, title = v.title, artist = v.artist, amazonId = v.amazonId, album = v.album, corrected = true)
                 )
             }
         }
@@ -127,7 +129,7 @@ class ReaderViewModel @Inject constructor(
             connectorRepository.markScan()
             connectorRepository.stopAndConfirm()
             if (leaving) return@launch
-            val result = connectorRepository.play(card.title, card.artist, card.year, card.setFile + "#" + card.number, card.amazonId)
+            val result = connectorRepository.play(card.title, card.artist, card.year, card.setFile + "#" + card.number, card.amazonId, card.album)
             if (leaving) return@launch
             _state.value = _state.value.copy(
                 send = if (result.isSuccess) SendStatus.PLAYING else SendStatus.FAILED,
@@ -196,7 +198,7 @@ class ReaderViewModel @Inject constructor(
                 song != null -> {
                     val card = ReaderCard(
                         mine, info.csvFileName, cardSetNames.displayName(info.csvFileName), info.index,
-                        song.year, song.title, song.artist, song.corrected, song.amazonId
+                        song.year, song.title, song.artist, song.corrected, song.amazonId, song.album
                     )
                     show(mine, card, null)
                     DebugLog.log(

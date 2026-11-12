@@ -14,7 +14,7 @@ class CardSetNamesTest {
     fun knownFilesHaveTheirGameName() {
         assertEquals("Hitster Deutschland", CardSetNames.displayName(names, "hitster-de.csv"))
         assertEquals("Hitster Deutschland Rock", CardSetNames.displayName(names, "hitster-de-aaaa0039.csv"))
-        assertEquals("Hitster - Original", CardSetNames.displayName(names, "hitster-de-aaaa0075.csv"))
+        assertEquals("Hitster Deutschland 2025", CardSetNames.displayName(names, "hitster-de-aaaa0075.csv"))
         assertEquals(
             "Hitster Deutschland Movies & TV Soundtracks Expansion Pack",
             CardSetNames.displayName(names, "hitster-de-aaaa0026.csv")

@@ -71,7 +71,7 @@ class GameViewModel @Inject constructor(
             val csvResult = csvRepository.getSongFromCSV(csvInfo.csvFileName, csvInfo.index)
             val song = csvResult.getOrNull()
             return when {
-                song != null -> Lookup(SongMapping(url, song.title, song.artist, song.year, amazonId = song.amazonId), csvInfo.csvFileName, null, csvInfo.index)
+                song != null -> Lookup(SongMapping(url, song.title, song.artist, song.year, amazonId = song.amazonId, album = song.album), csvInfo.csvFileName, null, csvInfo.index)
                 // The card number and the file name tell no song, so they are fine to show.
                 csvResult.isSuccess -> Lookup(
                     null, null,

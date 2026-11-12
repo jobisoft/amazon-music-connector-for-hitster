@@ -1,7 +1,6 @@
 package de.jobisoft.hitsterconnector.data.repository
 
 import android.app.ActivityManager
-import android.app.SearchManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -40,6 +39,7 @@ import de.jobisoft.hitsterconnector.util.SongIdentity
 import de.jobisoft.hitsterconnector.util.StartJump
 import de.jobisoft.hitsterconnector.util.PreferIdSetting
 import de.jobisoft.hitsterconnector.util.StartSetting
+import de.jobisoft.hitsterconnector.util.SearchExtras
 import de.jobisoft.hitsterconnector.util.SearchQuery
 import de.jobisoft.hitsterconnector.util.StateNames
 import de.jobisoft.hitsterconnector.util.StopConfirm
@@ -152,7 +152,9 @@ class ConnectorRepository @Inject constructor(
         /** The title as the session of Amazon Music shows it. */
         val sessionTitle: String?,
         /** The Amazon track id of the card, played first if there is one. */
-        val amazonId: String? = null
+        val amazonId: String? = null,
+        /** The album of the card set, sent along with a search. */
+        val album: String? = null
     )
 
     @Volatile
@@ -353,19 +355,16 @@ class ConnectorRepository @Inject constructor(
     private var queueLogged = false
 
     /**
-     * The extras of a search: focus, title, artist and the query.
+     * The extras of a search: focus, title, artist, the album if the card set has one, and the query (see [SearchExtras]).
      */
-    private fun extrasFor(title: String, artist: String) = Bundle().apply {
-        putString(MediaStore.EXTRA_MEDIA_FOCUS, MediaStore.Audio.Media.ENTRY_CONTENT_TYPE)
-        putString(MediaStore.EXTRA_MEDIA_TITLE, title)
-        putString(MediaStore.EXTRA_MEDIA_ARTIST, artist)
-        putString(SearchManager.QUERY, SearchQuery.query(title, artist))
+    private fun extrasFor(title: String, artist: String, album: String?) = Bundle().apply {
+        for ((name, value) in SearchExtras.fields(title, artist, album)) putString(name, value)
     }
 
     /** The play-from-search intent, aimed at Amazon Music. */
-    private fun searchIntent(title: String, artist: String) = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
+    private fun searchIntent(title: String, artist: String, album: String?) = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
         setPackage(AMAZON_MUSIC)
-        putExtras(extrasFor(title, artist))
+        putExtras(extrasFor(title, artist, album))
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 
@@ -388,7 +387,7 @@ class ConnectorRepository @Inject constructor(
     }
 
     /** Hands the search to the session, false if it could not even try. */
-    private fun sendSearch(controller: MediaController?, title: String, artist: String): Boolean {
+    private fun sendSearch(controller: MediaController?, title: String, artist: String, album: String?): Boolean {
         if (controller == null) {
             DebugLog.log("b-playFromSearch", "skipped, Amazon Music has no active session", mapOf("sessions" to describeSessions()))
             return false
@@ -396,8 +395,8 @@ class ConnectorRepository @Inject constructor(
         DebugLog.log("b-playFromSearch", "calling transportControls.playFromSearch", mapOf("session" to describe(controller)))
         return try {
             val query = SearchQuery.query(title, artist)
-            DebugLog.log("search", "query", mapOf("wantedTitle" to title, "wantedArtist" to artist, "querySent" to query))
-            controller.transportControls.playFromSearch(query, extrasFor(title, artist))
+            DebugLog.log("search", "query", mapOf("wantedTitle" to title, "wantedArtist" to artist, "wantedAlbum" to album, "querySent" to query))
+            controller.transportControls.playFromSearch(query, extrasFor(title, artist, album))
             true
         } catch (e: Throwable) {
             DebugLog.log("b-playFromSearch", "threw", mapOf("error" to e))
@@ -592,14 +591,15 @@ class ConnectorRepository @Inject constructor(
         artist: String,
         year: Int?,
         card: String?,
-        amazonId: String? = null
+        amazonId: String? = null,
+        album: String? = null
     ): Result<PlayAnswer> {
         StreamGuard.ensureAudible(context)
         VolumeDuck.duck(context)
         _playStatus.value = null
         return try {
             // the Options switch "Prefer Amazon ID over search": off, the card is searched like one without an id
-            playInner(title, artist, year, card, amazonId.takeIf { PreferIdSetting.useId(PreferIdSetting.isEnabled(context), it) })
+            playInner(title, artist, year, card, amazonId.takeIf { PreferIdSetting.useId(PreferIdSetting.isEnabled(context), it) }, album)
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Throwable) {
@@ -621,7 +621,8 @@ class ConnectorRepository @Inject constructor(
         artist: String,
         year: Int?,
         card: String?,
-        amazonId: String?
+        amazonId: String?,
+        album: String?
     ): Result<PlayAnswer> = withContext(Dispatchers.IO) {
         val started = SystemClock.elapsedRealtime()
         // the new song is "another song" for the guard of the old one
@@ -810,7 +811,7 @@ class ConnectorRepository @Inject constructor(
                     onOursState = {},
                     onPlaySent = { VolumeDuck.restore(context, "play sent") }
                 )
-                val r = drive.run { sendSearch(handle.controller(), title, artist) }
+                val r = drive.run { sendSearch(handle.controller(), title, artist, album) }
                 val playing = r.outcome == PlayDrive.Outcome.PLAYING
                 DebugLog.log(
                     "b-playFromSearch", "step outcome",
@@ -854,7 +855,7 @@ class ConnectorRepository @Inject constructor(
             var session = wakeByMediaButton(::waitForSession)
             if (!session) {
                 stepsRun += "a"
-                val tried = startLogged("a-intent", searchIntent(title, artist))
+                val tried = startLogged("a-intent", searchIntent(title, artist, album))
                 session = tried && waitForSession("a-intent", LAUNCH_WAIT_MS)
             }
             if (session) {
@@ -891,7 +892,7 @@ class ConnectorRepository @Inject constructor(
         val shown = controller.metadata
         lastRequested = LastSong(
             title, artist, year, card,
-            shown?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID), shown?.getString(MediaMetadata.METADATA_KEY_TITLE), amazonId
+            shown?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID), shown?.getString(MediaMetadata.METADATA_KEY_TITLE), amazonId, album
         )
         endGuard.arm("song started")
         // last: if an Amazon Music screen was opened on the way, this app's screen goes back to the front
@@ -1031,7 +1032,7 @@ class ConnectorRepository @Inject constructor(
     private suspend fun replayStoredSong(song: LastSong?): Result<PlayerPosition> {
         if (song == null) return Result.failure(Exception("Nothing to play again."))
         stopAndConfirm()
-        val result = play(song.title, song.artist, song.year, song.card, song.amazonId)
+        val result = play(song.title, song.artist, song.year, song.card, song.amazonId, song.album)
         val now = amazonController()
         return if (result.isSuccess && now != null) Result.success(snapshot(now)) else Result.failure(
             result.exceptionOrNull() ?: Exception("Amazon Music did not play the song.")

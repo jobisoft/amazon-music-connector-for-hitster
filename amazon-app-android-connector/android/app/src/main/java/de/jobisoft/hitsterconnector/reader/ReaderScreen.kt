@@ -198,7 +198,7 @@ private fun CardResult(card: ReaderCard, ui: ReaderUiState, onSend: () -> Unit) 
         }
         // the reader reads cards to check them: the values are shown at once, so the button is there at once, no reveal step
         ReportWrongSection(
-            ReportCard(card.serial, card.setFile, card.number, card.year, card.title, card.artist, card.amazonId),
+            ReportCard(card.serial, card.setFile, card.number, card.year, card.title, card.artist, card.amazonId, card.album),
             revealed = true,
             source = ReportSource.READER
         )

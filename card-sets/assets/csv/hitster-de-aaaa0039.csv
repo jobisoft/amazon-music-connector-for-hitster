@@ -1,309 +1,309 @@
-Card#,Title,Artist,Year,AmazonID
-1,Hells Bells,AC/DC,1980,
-2,Hard To Handle,The Black Crowes,1990,
-3,Purple Rain,Prince,1984,
-4,Wild Thing,The Troggs,1966,
-5,Prey,Parkway Drive,2018,
-6,Feel Invincible,Skillet,2016,
-7,B.Y.O.B.,System Of A Down,2005,
-8,Machinehead - Remastered,Bush,1994,
-9,Basket Case,Green Day,1994,
-10,Call Me,Blondie,1980,
-11,Sweet Home Alabama,Lynyrd Skynyrd,1974,
-12,Fear of the Dark,Iron Maiden,1992,
-13,With Or Without You,U2,1985,
-14,Just Like Heaven,The Cure,1987,
-15,Champagne Supernova,Oasis,1995,
-16,Psychosocial,Slipknot,2008,
-17,(I Just) Died In Your Arms,Cutting Crew,1986,
-18,Give It Away,Red Hot Chili Peppers,1991,
-19,Bloody Valentine,MGK,2020,
-20,My Generation,The Who,1965,
-21,Panic,From Ashes to New,2020,
-22,Highway Tune,Greta Van Fleet,2017,
-23,Sunshine Of Your Love,Cream,1967,
-24,Drop Dead Cynical,Amaranthe,2014,
-25,Semi-Charmed Life,Third Eye Blind,1997,
-26,What's My Age Again?,blink-182,1999,
-27,Another Life,Motionless In White,2019,
-28,Round and Round,Ratt,1984,
-29,My Curse,Killswitch Engage,2006,
-30,My Sharona,The Knack,1979,
-31,Satellite,Rise Against,2011,
-32,Stairway to Heaven - Remaster,Led Zeppelin,1971,
-33,Owner of a Lonely Heart,Yes,1983,
-34,Don't Bring Me Down,Electric Light Orchestra,1979,
-35,Cherry Bomb,The Runaways,1976,
-36,Holy Diver,Dio,1983,
-37,November Rain,Guns N' Roses,1991,
-38,The Trooper,Iron Maiden,1983,
-39,Kickstart My Heart,Mötley Crüe,1989,
-40,Masterpiece,Motionless In White,2022,
-41,Bulls On Parade,Rage Against The Machine,1996,
-42,Come As You Are,Nirvana,1991,
-43,Born in the U.S.A.,Bruce Springsteen,1984,
-44,Fat Lip,Sum 41,2001,
-45,Get It On,T. Rex,1971,
-46,Misery Business,Paramore,2007,
-47,The Passenger,Iggy Pop,1977,
-48,Hate To Say I Told You So,The Hives,2000,
-49,Silent Lucidity,Queensrÿche,1990,
-50,Savior,Rise Against,2008,
-51,Tutti Frutti,Little Richard,1955,
-52,We Got the Moves,Electric Callboy,2021,
-53,Rose Tattoo,Dropkick Murphys,2013,
-54,I Love Rock 'N Roll,Joan Jett & the Blackhearts,1981,
-55,La Grange,ZZ Top,1973,
-56,Supermassive Black Hole,Muse,2006,
-57,Celebrity Skin,Hole,1998,
-58,Square Hammer,Ghost,2016,
-59,Rollin' (Air Raid Vehicle),Limp Bizkit,2000,
-60,Alone In A Room,Asking Alexandria,2017,
-61,Go Your Own Way,Fleetwood Mac,1976,
-62,American Woman,The Guess Who,1971,
-63,Heat Of The Moment,Asia,1982,
-64,Juke Box Hero,Foreigner,1981,
-65,The Devil's Bleeding Crown,Volbeat,2016,
-66,Songs für Liam,Kraftklub,2012,
-67,Chop Suey!,System Of A Down,2001,
-68,Schrei nach Liebe,Die Ärzte,1993,
-69,Teenage Dirtbag,Wheatus,2000,
-70,Here I Go Again,Whitesnake,1982,
-71,Hail to the King,Avenged Sevenfold,2013,
-72,Sleepwalking,Bring Me The Horizon,2013,
-73,Eye of the Tiger,Survivor,1982,
-74,Oh' Pretty Woman,Roy Orbison,1964,
-75,The Final Countdown,Europe,1986,
-76,Rock Around The Clock,Bill Haley & His Comets,1954,
-77,Death by Rock and Roll,The Pretty Reckless,2020,
-78,Interstate Love Song,Stone Temple Pilots,1994,
-79,No One Like You,Scorpions,1982,
-80,Balls to the Wall,Accept,1983,
-81,Carry on Wayward Son,Kansas,1976,
-82,Welcome to the Black Parade,My Chemical Romance,2006,
-83,Maybellene,Chuck Berry,1955,
-84,I Hate Myself for Loving You,Joan Jett & the Blackhearts,1988,
-85,Animals,Architects,2020,
-86,I Will Not Bow,Breaking Benjamin,2009,
-87,Freak On a Leash,Korn,1998,
-88,Dance Macabre,Ghost,2018,
-89,What I Got,Sublime,1996,
-90,Wake up Little Susie,The Everly Brothers,1957,
-91,I Wanna Rock,Twisted Sister,1984,
-92,Black Hole Sun,Soundgarden,1994,
-93,Bad Medicine,Bon Jovi,1988,
-94,Rock And Roll All Nite,KISS,1975,
-95,Mr. Jones,Counting Crows,1993,
-96,Bodies,Drowning Pool,2001,
-97,Stinkfist,TOOL,1996,
-98,Run For Cover,The Killers,2017,
-99,Kryptonite,3 Doors Down,2000,
-100,Free Bird,Lynyrd Skynyrd,1973,
-101,Howlin' for You,The Black Keys,2010,
-102,Master Of Puppets,Metallica,1986,
-103,The Kill (Bury Me),Thirty Seconds To Mars,2005,
-104,Heart-Shaped Box,Nirvana,1993,
-105,Put Your Head On My Shoulder,Paul Anka,1959,
-106,Should I Stay or Should I Go - Remastered,The Clash,1982,
-107,Scar Tissue,Red Hot Chili Peppers,1999,
-108,Ace of Spades,Motörhead,1980,
-109,18 and Life,Skid Row,1989,
-110,Green Onions,Booker T. & the M.G.'s,1962,
-111,Iron Man,Black Sabbath,1970,
-112,The Summoning,Sleep Token,2023,
-113,Bulletproof,Godsmack,2018,
-114,Hit the Road Jack,Ray Charles,1961,
-115,Circle With Me,Spiritbox,2021,
-116,California Dreamin',The Mamas & The Papas,1965,
-117,Face Down,The Red Jumpsuit Apparatus,2006,
-118,R U Mine?,Arctic Monkeys,2012,
-119,You Ain't Seen Nothing Yet,Bachman-Turner Overdrive,1974,
-120,Run Through The Jungle,Creedence Clearwater Revival,1970,
-121,Song #3,Stone Sour,2017,
-122,You're Going Down,Sick Puppies,2011,
-123,Born to Run,Bruce Springsteen,1975,
-124,Centuries,Fall Out Boy,2014,
-125,For What It's Worth,Buffalo Springfield,1966,
-126,Epic,Faith No More,1989,
-127,Still Waiting,Sum 41,2002,
-128,Hotel California,Eagles,1976,
-129,No One Knows,Queens of the Stone Age,2002,
-130,Painkiller,Judas Priest,1990,
-131,Fight For Your Right,Beastie Boys,1986,
-132,I Write Sins Not Tragedies,Panic! At The Disco,2006,
-133,Tears Don't Fall,Bullet For My Valentine,2006,
-134,Symphony Of Destruction,Megadeth,1992,
-135,Bonnie & Clyde,Die Toten Hosen,1996,
-136,My Own Worst Enemy,Lit,1999,
-137,Burning Heart,Survivor,1985,
-138,GOSSIP (feat. Tom Morello),Måneskin,2023,
-139,Plush,Stone Temple Pilots,1992,
-140,Pour Some Sugar On Me,Def Leppard,1987,
-141,I Stand Alone,Godsmack,2002,
-142,Going Under,Evanescence,2003,
-143,The Middle,Jimmy Eat World,2001,
-144,Hound Dog,Elvis Presley,1956,
-145,Sk8er Boi,Avril Lavigne,2002,
-146,Break on Through (To the Other Side),The Doors,1967,
-147,Surfin' U.S.A.,The Beach Boys,1963,
-148,Need A Favor,Jelly Roll,2023,
-149,The Emptiness Machine,Linkin Park,2024,
-150,Cut the Cord,Shinedown,2015,
-151,Hurricane,I Prevail,2019,
-152,Are You Gonna Be My Girl,Jet,2003,
-153,American Idiot,Green Day,2004,
-154,Hit Me With Your Best Shot,Pat Benatar,1980,
-155,Crazy Train,Ozzy Osbourne,1980,
-156,I Wanna be your slave,Måneskin,2021,
-157,In the End,Linkin Park,2000,
-158,Even Flow,Pearl Jam,1991,
-159,Black Betty,Ram Jam,1977,
-160,Detroit Rock City,KISS,1976,
-161,Don't Stop Me Now,Queen,1978,
-162,Bad To The Bone,George Thorogood & The Destroyers,1982,
-163,Poison,Alice Cooper,1989,
-164,Danger Zone,Kenny Loggins,1986,
-165,Thunderstruck,AC/DC,1990,
-166,Children of the Grave,Black Sabbath,1971,
-167,Altes Fieber,Die Toten Hosen,2012,
-168,Creep,Radiohead,1992,
-169,Dragula,Rob Zombie,1998,
-170,Angels Fall,Breaking Benjamin,2015,
-171,I Miss the Misery,Halestorm,2012,
-172,Two Princes,Spin Doctors,1991,
-173,Breaking the Law,Judas Priest,1980,
-174,Lola Montez,Volbeat,2013,
-175,Ain't Talkin' 'Bout Love,Van Halen,1978,
-176,Just What I Needed,The Cars,1978,
-177,San Quentin,Nickelback,2022,
-178,First Date,blink-182,2001,
-179,Joker And The Thief,Wolfmother,2005,
-180,Don't Threaten Me with a Good Time,Panic! At The Disco,2016,
-181,To Hell and Back,Sabaton,2014,
-182,All Star,Smash Mouth,1999,
-183,White Trash Millionaire,Black Stone Cherry,2011,
-184,Getting Along,Royal Republic,2016,
-185,I'd Do Anything For Love (But I Won't Do That),Meat Loaf,1993,
-186,Risin' High - Def Core Grind Version,H-Blockx,1993,
-187,Fake It,Seether,2007,
-188,Seven Nation Army,The White Stripes,2003,
-189,Love Hurts,Nazareth,1974,
-190,Gimme Shelter,The Rolling Stones,1969,
-191,The Kids Aren't Alright,The Offspring,1998,
-192,Self Esteem,The Offspring,1994,
-193,Jekyll and Hyde,Five Finger Death Punch,2015,
-194,S.O.S. (Sawed Off Shotgun),The Glorious Sons,2017,
-195,Red Flag,Billy Talent,2006,
-196,Heaven Knows,The Pretty Reckless,2014,
-197,"Dance, Dance",Fall Out Boy,2005,
-198,Help,Papa Roach,2017,
-199,You Give Love A Bad Name,Bon Jovi,1986,
-200,All Day and All of the Night,The Kinks,1964,
-201,Every You Every Me,Placebo,1998,
-202,Paradise City,Guns N' Roses,1987,
-203,Monsters (feat. blackbear),All Time Low,2020,
-204,Enter Sandman,Metallica,1991,
-205,Nothin' But A Good Time,Poison,1988,
-206,You're The One,Greta Van Fleet,2018,
-207,I'm a Believer,The Monkees,1966,
-208,Guerrilla Radio,Rage Against The Machine,1999,
-209,Down with the Sickness,Disturbed,2000,
-210,Stay,Maurice Williams,1960,
-211,Open Your Eyes,Guano Apes,1997,
-212,1979,The Smashing Pumpkins,1995,
-213,Like a Stone,Audioslave,2002,
-214,Radioactive,Kings of Leon,2010,
-215,Ocean Avenue,Yellowcard,2004,
-216,Man in the Box,Alice In Chains,1990,
-217,Cherry Pie,Warrant,1990,
-218,Higher,Creed,1999,
-219,Drive,Incubus,1999,
-220,"Another Brick In The Wall, Pt. 2",Pink Floyd,1979,
-221,"Girls, Girls, Girls",Mötley Crüe,1987,
-222,Lonely Boy,The Black Keys,2011,
-223,Fortunate Son,Creedence Clearwater Revival,1969,
-224,Push,Matchbox Twenty,1996,
-225,Mr. Brightside,The Killers,2003,
-226,Free Fallin',Tom Petty,1989,
-227,Come Together,The Beatles,1969,
-228,Dream On,Aerosmith,1973,
-229,Army of the Night,Powerwolf,2015,
-230,"Paint It, Black",The Rolling Stones,1966,
-231,Everlong,Foo Fighters,1997,
-232,Tanzt du noch einmal mit mir?,Broilers,2011,
-233,Run To You,Bryan Adams,1984,
-234,I Hate Everything About You,Three Days Grace,2003,
-235,Separate Ways,Journey,1983,
-236,Still into You,Paramore,2013,
-237,Sharp Dressed Man,ZZ Top,1983,
-238,Barracuda,Heart,1977,
-239,Last Resort,Papa Roach,2000,
-240,Born To Be Wild,Steppenwolf,1968,
-241,Buddy Holly,Weezer,1994,
-242,Your Betrayal,Bullet For My Valentine,2010,
-243,She Sells Sanctuary,The Cult,1985,
-244,Coming Undone,Korn,2005,
-245,Jailhouse Rock,Elvis Presley,1957,
-246,Break,Three Days Grace,2009,
-247,Riptide,Beartooth,2023,
-248,Hey Joe,Jimi Hendrix,1966,
-249,The Anthem,Good Charlotte,2002,
-250,Entre dos tierras,Heroes Del Silencio,1990,
-251,1985,Bowling For Soup,2004,
-252,Mother,Danzig,1988,
-253,Dark Matter,Pearl Jam,2024,
-254,Won’t Stand Down,Muse,2022,
-255,School's Out,Alice Cooper,1972,
-256,My Own Summer (Shove It),Deftones,1997,
-257,Trouble’s Coming,Royal Blood,2020,
-258,Panama,Van Halen,1984,
-259,All I Want,A Day To Remember,2010,
-260,Walk This Way,Aerosmith,1975,
-261,Johnny B. Goode,Chuck Berry,1958,
-262,Song 2,Blur,1997,
-263,Stacy's Mom,Fountains Of Wayne,2003,
-264,Rockstar,Nickelback,2005,
-265,Raining Blood,Slayer,1986,
-266,Monster,Skillet,2009,
-267,Dirty Little Secret,The All-American Rejects,2005,
-268,Just Pretend,Bad Omens,2022,
-269,All Right Now,Free,1970,
-270,Baba O'Riley,The Who,1971,
-271,Na Na Na (Na Na Na Na Na Na Na Na Na),My Chemical Romance,2010,
-272,Rock You Like A Hurricane,Scorpions,1984,
-273,Cold as Ice,Foreigner,1977,
-274,Money - 2023 Remaster,Pink Floyd,1973,
-275,White Wedding,Billy Idol,1982,
-276,Renegade,Styx,1978,
-277,The Pretender,Foo Fighters,2007,
-278,Be Bop a Lula,Gene Vincent,1956,
-279,Roxanne,The Police,1978,
-280,Hold the Line,TOTO,1978,
-281,The Boys Are Back In Town,Thin Lizzy,1976,
-282,LosT,Bring Me The Horizon,2023,
-283,CMFT Must Be Stopped (feat. Tech N9ne and Kid Bookie),Corey Taylor,2020,
-284,(Don't Fear) The Reaper,Blue Öyster Cult,1976,
-285,The Vengeful One,Disturbed,2015,
-286,Don't Stop Believin',Journey,1981,
-287,Everybody Talks,Neon Trees,2011,
-288,Just A Girl,No Doubt,1995,
-289,Tom Sawyer,Rush,1981,
-290,Planet Zero,Shinedown,2022,
-291,If Tomorrow Never Comes,Wage War,2021,
-292,Dark Side,Blind Channel,2021,
-293,Absolute Zero,Stone Sour,2012,
-294,Could Have Been Me,The Struts,2014,
-295,White Rabbit,Jefferson Airplane,1967,
-296,Nightmare,Avenged Sevenfold,2010,
-297,Bohemian Rhapsody,Queen,1975,
-298,Dancing With Myself,Billy Idol,1980,
-299,Duality,Slipknot,2004,
-300,Bark at the Moon,Ozzy Osbourne,1983,
-301,Bite Me,Avril Lavigne,2021,
-302,Immigrant Song - Remaster,Led Zeppelin,1970,
-303,House of the Rising Sun,The Animals,1964,
-304,London Calling,The Clash,1979,
-305,Fox On The Run,Sweet,1974,
-306,I Wanna Be Sedated,Ramones,1978,
-307,Highway Star,Deep Purple,1972,
-308,Figure It Out,Royal Blood,2014,
+Card#,Title,Artist,Year,AmazonID,Album
+1,Hells Bells,AC/DC,1980,B00O6HPVHK,Back In Black
+2,Hard To Handle,The Black Crowes,1990,B08RWY9FZN,Shake Your Money Maker (30th Anniversary Deluxe)
+3,Purple Rain,Prince,1984,B0D4CGL1J6,Purple Rain
+4,Wild Thing,The Troggs,1966,B0FJ84WB63,Wild Thing
+5,Prey,Parkway Drive,2018,B07ZMHD8WX,Reverence [Explicit]
+6,Feel Invincible,Skillet,2016,B01FNGBT96,Unleashed
+7,B.Y.O.B.,System Of A Down,2005,B001V2U6MI,Mezmerize [Explicit]
+8,Machinehead,Bush,1994,B071F4K9SQ,Sixteen Stone
+9,Basket Case,Green Day,1994,B001VFED2E,Dookie [Explicit]
+10,Call Me,Blondie,1980,B001QN1ACM,Call Me
+11,Sweet Home Alabama,Lynyrd Skynyrd,1974,B00IZVHGG2,Second Helping (Expanded Edition)
+12,Fear Of The Dark,Iron Maiden,1992,B07K7RLJHK,Fear of the Dark (2015 Remaster)
+13,With Or Without You,U2,1985,B06XSB8PVF,The Joshua Tree (Deluxe)
+14,Just Like Heaven,The Cure,1987,B0045M6YD6,Kiss Me Kiss Me Kiss Me (Remastered 2006) [Explicit]
+15,Champagne Supernova,Oasis,1995,B089VXKPR6,(What's The Story) Morning Glory?
+16,Psychosocial,Slipknot,2008,B008IYH15M,Antennas to Hell (Special Edition) [Explicit]
+17,(I Just) Died In Your Arms,Cutting Crew,1986,B001QBLQXM,Broadcast
+18,Give It Away,Red Hot Chili Peppers,1991,B005IQSZ3A,Blood Sugar Sex Magik [Explicit]
+19,Bloody Valentine,MGK,2020,B087N5LTCM,bloody valentine [Explicit]
+20,My Generation,The Who,1965,B01M7MRBU9,My Generation (50th Anniversary / Super Deluxe)
+21,Panic,From Ashes to New,2020,B088K4RWBM,Panic [Explicit]
+22,Highway Tune,Greta Van Fleet,2017,B0775M9X6Z,From The Fires
+23,Sunshine Of Your Love,Cream,1967,B001SQUSL6,Disraeli Gears
+24,Drop Dead Cynical,Amaranthe,2014,B0BQJ4HW1P,MASSIVE ADDICTIVE (Deluxe Edition)
+25,Semi-Charmed Life,Third Eye Blind,1997,B002TEV6QC,Third Eye Blind
+26,What's My Age Again?,blink-182,1999,B07H74QHLK,Enema Of The State [Explicit]
+27,Another Life,Motionless In White,2019,B07QHNBD1T,Disguise [Explicit]
+28,Round And Round,Ratt,1984,B00AD3135U,Born To Rock - 60 Tracks of Classic Rock
+29,My Curse,Killswitch Engage,2006,B001SG8BNI,As Daylight Dies (Special Edition)
+30,My Sharona,The Knack,1979,B0B3GFCS46,My Sharona (Live)
+31,Satellite,Rise Against,2011,B004PQ9MFE,Endgame
+32,Stairway to Heaven,Led Zeppelin,1971,B07W1Y342Q,Led Zeppelin IV
+33,Owner Of A Lonely Heart,Yes,1983,B0DTKTQZH9,90125
+34,Don't Bring Me Down,Electric Light Orchestra,1979,B017J3816U,Discovery
+35,Cherry Bomb,The Runaways,1976,B006PXEBPQ,The Runaways
+36,Holy Diver,Dio,1983,B003S4US2U,Holy Diver
+37,November Rain,Guns N' Roses,1991,B001SQYW1S,Use Your Illusion I [Explicit]
+38,The Trooper,Iron Maiden,1983,B07VMQHF97,Piece of Mind (2015 Remaster)
+39,Kickstart My Heart,Mötley Crüe,1989,B0F1KFNZBW,Dr. Feelgood [Explicit]
+40,Masterpiece,Motionless In White,2022,B0CB9C4SD3,Scoring The End Of The World (Deluxe Edition) [Explicit]
+41,Bulls On Parade,Rage Against The Machine,1996,B0040P0X30,Evil Empire [Explicit]
+42,Come As You Are,Nirvana,1991,B005NK9IX2,Nevermind (Remastered) [Explicit]
+43,Born In The U.S.A.,Bruce Springsteen,1984,B00HFT27IM,Born In The U.S.A.
+44,Fat Lip,Sum 41,2001,B001SQ7B48,"All Killer, No Filler"
+45,Get It On,T. Rex,1971,B0080ATU4O,Electric Warrior
+46,Misery Business,Paramore,2007,B001RZ9DZK,Misery Business
+47,The Passenger,Iggy Pop,1977,B072C5LCD7,Lust For Life
+48,Hate To Say I Told You So,The Hives,2000,B07ZMJ2Z4M,Veni Vidi Vicious
+49,Silent Lucidity,Queensrÿche,1990,B001QH9WWS,Empire (Expanded Edition / Remastered/2003)
+50,Savior,Rise Against,2008,B00NLBR73S,Appeal To Reason
+51,Tutti Frutti,Little Richard,1955,B06XWGGD3X,Tutti frutti
+52,We Got The Moves,Electric Callboy,2021,B09CJ37H8N,We Got the Moves [Explicit]
+53,Rose Tattoo,Dropkick Murphys,2013,B00DV2P44Q,Signed And Sealed In Blood
+54,I Love Rock 'N Roll,Joan Jett & the Blackhearts,1981,B0GJJV8QJT,I Love Rock 'N' Roll (Expanded Edition)
+55,La Grange,ZZ Top,1973,B0DZTR8GFP,"La Grange (From ""RAW: That Little Ol' Band From Texas"" Original Soundtrack)"
+56,Supermassive Black Hole,Muse,2006,B002BABUUQ,Black Holes and Revelations
+57,Celebrity Skin,Hole,1998,B001SQE8NU,Celebrity Skin
+58,Square Hammer,Ghost,2016,B01LWBN97O,Meliora (Deluxe Edition)
+59,Rollin' (Air Raid Vehicle),Limp Bizkit,2000,B011JPMR4Q,Chocolate Starfish And The Hot Dog Flavored Water [Explicit]
+60,Alone In A Room,Asking Alexandria,2017,B0FR196QD2,Asking Alexandria [Explicit]
+61,Go Your Own Way,Fleetwood Mac,1976,B00B2O15X4,Rumours
+62,American Woman,The Guess Who,1971,B08925JV1M,American Woman (Expanded Edition)
+63,Heat Of The Moment,Asia,1982,B07G5MX2XY,Asia
+64,Juke Box Hero,Foreigner,1981,B001TS1IAI,4 (Expanded)
+65,The Devil's Bleeding Crown,Volbeat,2016,B01DPX2M04,Seal The Deal & Let's Boogie (Deluxe)
+66,Songs für Liam,Kraftklub,2012,B006SNR24A,Mit K [Explicit]
+67,Chop Suey!,System Of A Down,2001,B001SNN79E,Chop Suey! [Explicit]
+68,Schrei nach Liebe,Die Ärzte,1993,B08C2CSFFM,Die Bestie in Menschengestalt
+69,Teenage Dirtbag,Wheatus,2000,B0FQPVLV3L,Teenage Dirtbag [Explicit]
+70,Here I Go Again,Whitesnake,1982,B0GC4HX1F1,Whitesnake (2018 Remaster)
+71,Hail To The King,Avenged Sevenfold,2013,B00EPZKKRY,Hail to the King (Deluxe Edition)
+72,Sleepwalking,Bring Me The Horizon,2013,B076YJ5SMV,Sleepwalking
+73,Eye Of The Tiger,Survivor,1982,B001VFDDMK,Eye Of The Tiger
+74,"Oh, Pretty Woman",Roy Orbison,1964,B00K3CH6LQ,"Oh, Pretty Woman"
+75,The Final Countdown,Europe,1986,B001SGRLKM,The Final Countdown (Expanded Edition)
+76,Rock Around The Clock,Bill Haley & His Comets,1954,B07L657KHY,Rock Around The Clock
+77,Death By Rock And Roll,The Pretty Reckless,2020,B0GRWM6N42,Death by Rock and Roll [Explicit]
+78,Interstate Love Song,Stone Temple Pilots,1994,B002LQ0NRQ,Purple [Explicit]
+79,No One Like You,Scorpions,1982,B00GKBRVJQ,Best
+80,Balls To The Wall,Accept,1983,B0DRD3PD89,Balls To The Wall
+81,Carry on Wayward Son,Kansas,1976,B001UHPIZ4,Leftoverture (Expanded Edition)
+82,Welcome To The Black Parade,My Chemical Romance,2006,B00J5BQ5QS,May Death Never Stop You (Deluxe Edition) [Explicit]
+83,Maybellene,Chuck Berry,1955,B07ZVXMB4H,Johnny B. Goode: His Complete '50s Chess Recordings
+84,I Hate Myself For Loving You,Joan Jett & the Blackhearts,1988,B0GJSHMGJD,Up Your Alley
+85,Animals,Architects,2020,B08ZSBZ3XK,Animals (Amazon Original) [Explicit]
+86,I Will Not Bow,Breaking Benjamin,2009,B013XW2A04,Dear Agony
+87,Freak On a Leash,Korn,1998,B01M6X75I5,Follow The Leader
+88,Dance Macabre,Ghost,2018,B07BZK69Q7,Prequelle
+89,What I Got,Sublime,1996,B07GJ83CLL,Sublime (10th Anniversary Edition / Deluxe Edition) [Explicit]
+90,Wake Up Little Susie,The Everly Brothers,1957,B004CDJDYA,British Singles Chart - Week Ending 15 November 1957 [Explicit]
+91,I Wanna Rock,Twisted Sister,1984,B0DZXH749T,Stay Hungry
+92,Black Hole Sun,Soundgarden,1994,B00KJ7DYIE,Superunknown (Deluxe Edition)
+93,Bad Medicine,Bon Jovi,1988,B00L6KYY96,New Jersey (Remastered Deluxe Edition)
+94,Rock And Roll All Nite,KISS,1975,B0G1VD42JY,Dressed To Kill (2025 Remaster)
+95,Mr. Jones,Counting Crows,1993,B001SPX4RM,August And Everything After
+96,Bodies,Drowning Pool,2001,B0FHJ64RRF,Bodies
+97,Stinkfist,TOOL,1996,B07VPYDNXJ,Ænima [Explicit]
+98,Run For Cover,The Killers,2017,B0747V6SVQ,Wonderful Wonderful
+99,Kryptonite,3 Doors Down,2000,B001SQBFOA,The Better Life
+100,Free Bird,Lynyrd Skynyrd,1973,B001SQ4Z5G,Pronounced 'Leh-'Nérd 'Skin-'Nérd (Expanded Edition)
+101,Howlin' For You,The Black Keys,2010,B08P6QLN8X,Brothers (Deluxe Remastered Anniversary Edition)
+102,Master Of Puppets,Metallica,1986,B0752J6WP8,Master Of Puppets (Remastered) [Explicit]
+103,The Kill (Bury Me),Thirty Seconds To Mars,2005,B001QBGL3M,A Beautiful Lie
+104,Heart-Shaped Box,Nirvana,1993,B00F1UYSBG,In Utero
+105,Put Your Head On My Shoulder,Paul Anka,1959,B00FA5APW8,Put Your Head On My Shoulder
+106,Should I Stay Or Should I Go,The Clash,1982,B00EE0HDKW,Combat Rock
+107,Scar Tissue,Red Hot Chili Peppers,1999,B005IQT9NA,Californication [Explicit]
+108,Ace Of Spades,Motörhead,1980,B0FS23ZHF4,Ace of Spades [Explicit]
+109,18 And Life,Skid Row,1989,B0HJ9VJGWQ,18 and Life (2026 Remaster)
+110,Green Onions,Booker T. & the M.G.'s,1962,B001SG5SSE,Green Onions
+111,Iron Man,Black Sabbath,1970,B0DZVKK33G,Paranoid (2009 Remaster)
+112,The Summoning,Sleep Token,2023,B0BTJX77GP,The Summoning
+113,Bulletproof,Godsmack,2018,B0GR7XS1ZS,When Legends Rise
+114,Hit The Road Jack,Ray Charles,1961,B0GRWT8M9F,Hit The Road Jack
+115,Circle With Me,Spiritbox,2021,B0DZTTNCF2,Circle With Me
+116,California Dreamin',The Mamas & The Papas,1965,B079TH6J4H,If You Can Believe Your Eyes & Ears
+117,Face Down,The Red Jumpsuit Apparatus,2006,B001QKVUWK,Don't You Fake It
+118,R U Mine?,Arctic Monkeys,2012,B00EXX5JS8,AM
+119,You Ain't Seen Nothing Yet,Bachman-Turner Overdrive,1974,B001SQD2XW,Not Fragile
+120,Run Through The Jungle,Creedence Clearwater Revival,1970,B018548E9Q,Cosmo's Factory (Expanded Edition)
+121,Song #3,Stone Sour,2017,B07VV2HK9N,Hydrograd (Deluxe Edition) [Explicit]
+122,You're Going Down,Sick Puppies,2011,B004SUSUVO,Tri-Polar [Explicit]
+123,Born to Run,Bruce Springsteen,1975,B00FHR2N8S,Born To Run - 30th Anniversary Edition (standard)
+124,Centuries,Fall Out Boy,2014,B00QLM7UVI,American Beauty/American Psycho
+125,For What It's Worth,Buffalo Springfield,1966,B001S1WDZ0,Buffalo Springfield
+126,Epic,Faith No More,1989,B001S0OP70,The Real Thing
+127,Still Waiting,Sum 41,2002,B001SVJDQ2,Does This Look Infected?
+128,Hotel California,Eagles,1976,B00DHLI3DA,Hotel California (2013 Remaster)
+129,No One Knows,Queens of the Stone Age,2002,B001SVG8SS,No One Knows
+130,Painkiller,Judas Priest,1990,B001UQHWVI,Painkiller
+131,Fight For Your Right,Beastie Boys,1986,B001SQF5IC,Licensed To Ill
+132,I Write Sins Not Tragedies,Panic! At The Disco,2006,B0040YVK5G,A Fever You Can't Sweat Out
+133,Tears Don't Fall,Bullet For My Valentine,2006,B01DKUGB2M,The Poison (Deluxe Version) [Explicit]
+134,Symphony Of Destruction,Megadeth,1992,B001QM43W2,Countdown To Extinction (Expanded Edition)
+135,Bonnie & Clyde,Die Toten Hosen,1996,B0061I9FVA,All die ganzen Jahre: Ihre besten Lieder
+136,My Own Worst Enemy,Lit,1999,B01DKUAWVS,A Place In The Sun [Explicit]
+137,Burning Heart,Survivor,1985,B001SGUTYM,Rocky IV
+138,GOSSIP,Måneskin (feat. Tom Morello),2023,B0BPYSGD1M,RUSH! [Explicit]
+139,Plush,Stone Temple Pilots,1992,B07W2WN69C,Core (Super Deluxe Edition) [Explicit]
+140,Pour Some Sugar On Me,Def Leppard,1987,B078W8XXZP,Hysteria
+141,I Stand Alone,Godsmack,2002,B073C2NH33,Faceless [Explicit]
+142,Going Under,Evanescence,2003,B00LN0I5AI,Fallen
+143,The Middle,Jimmy Eat World,2001,B08QC7WVJP,Bleed American (Deluxe Edition)
+144,Hound Dog,Elvis Presley,1956,B00E5F4TVM,Elvis' Golden Records
+145,Sk8er Boi,Avril Lavigne,2002,B01N7ONRKK,Let Go
+146,Break on Through (To the Other Side),The Doors,1967,B003X2H6E0,The Doors
+147,Surfin' U.S.A.,The Beach Boys,1963,B001QDJSLM,Endless Summer
+148,Need A Favor,Jelly Roll,2023,B0C81YQMT3,Need A Favor (feat. Johnny Jelly)
+149,The Emptiness Machine,Linkin Park,2024,B0DFRZJ7LB,From Zero [Explicit]
+150,Cut The Cord,Shinedown,2015,B07VXK9RRF,Cut the Cord
+151,Hurricane,I Prevail,2019,B085KWNFF1,Hurricane (Reimagined) [Explicit]
+152,Are You Gonna Be My Girl,Jet,2003,B07D9BX5YL,Are You Gonna Be My Girl
+153,American Idiot,Green Day,2004,B001QVLBXC,American Idiot [Explicit]
+154,Hit Me With Your Best Shot,Pat Benatar,1980,B001QN01TK,Crimes Of Passion
+155,Crazy Train,Ozzy Osbourne,1980,B08HW7BXZ2,Blizzard Of Ozz (40th Anniversary Expanded Edition)
+156,I Wanna Be Your Slave,Måneskin,2021,B0H6N7L5M3,I WANNA BE YOUR SLAVE [Explicit]
+157,In The End,Linkin Park,2000,B07VQW9HT1,Hybrid Theory (Deluxe Edition)
+158,Even Flow,Pearl Jam,1991,B00A515AD6,Ten
+159,Black Betty,Ram Jam,1977,B00KXYPDCS,Ram Jam
+160,Detroit Rock City,KISS,1976,B0040JYUTO,Greatest Kiss
+161,Don't Stop Me Now,Queen,1978,B0H5M7R1Y4,Anthems
+162,Bad To The Bone,George Thorogood & The Destroyers,1982,B07GCKKCYX,The Baddest Of George Thorogood And The Destroyers
+163,Poison,Alice Cooper,1989,B001VFEMHK,Trash
+164,Danger Zone,Kenny Loggins,1986,B004IY3NQ2,TOP GUN/SOUNDTRACK (Original Motion Picture Soundtrack)
+165,Thunderstruck,AC/DC,1990,B00O6HLZVQ,The Razors Edge
+166,Children Of The Grave,Black Sabbath,1971,B0DZV9QJ3S,Master of Reality
+167,Altes Fieber,Die Toten Hosen,2012,B009H7X5QI,Altes Fieber
+168,Creep,Radiohead,1992,B01FFW1J8E,Creep [Explicit]
+169,Dragula,Rob Zombie,1998,B001SQGIXS,Hellbilly Deluxe [Explicit]
+170,Angels Fall,Breaking Benjamin,2015,B00UMHMNJM,Dark Before Dawn
+171,I Miss The Misery,Halestorm,2012,B07VVGQ9B7,The Strange Case of... [Explicit]
+172,Two Princes,Spin Doctors,1991,B001W3RE4E,Pocket Full Of Kryptonite
+173,Breaking The Law,Judas Priest,1980,B001SM8E16,British Steel
+174,Lola Montez,Volbeat,2013,B00CK4UMC0,Outlaw Gentlemen & Shady Ladies (Deluxe Version)
+175,Ain't Talkin' 'Bout Love,Van Halen,1978,B07VZY3HPX,Van Halen (Remastered)
+176,Just What I Needed,The Cars,1978,B003O504TK,The Cars
+177,San Quentin,Nickelback,2022,B0DZTV5DWJ,Get Rollin' [Explicit]
+178,First Date,blink-182,2001,B01FYR1YRQ,Take Off Your Pants And Jacket [Explicit]
+179,Joker And The Thief,Wolfmother,2005,B001SPQQWW,Wolfmother
+180,Don't Threaten Me With A Good Time,Panic! At The Disco,2016,B07VVF36SX,Death of a Bachelor
+181,To Hell And Back,Sabaton,2014,B07RRYPJ5S,Heroes
+182,All Star,Smash Mouth,1999,B001SQ7SL4,Astro Lounge
+183,White Trash Millionaire,Black Stone Cherry,2011,B004ZVF16I,Between the Devil & the Deep Blue Sea (Special Edition)
+184,Getting Along,Royal Republic,2016,B01830HVR8,Weekend Man
+185,I'd Do Anything For Love (But I Won't Do That),Meat Loaf,1993,B00FRK9QBM,Virgin Records: 40 Years Of Disruptions [Explicit]
+186,Risin' High - Def Core Grind Version,H-Blockx,1993,B001SP33VE,Time To Move
+187,Fake It,Seether,2007,B00LN0FI94,Finding Beauty In Negative Spaces (Bonus Track Version) [Explicit]
+188,Seven Nation Army,The White Stripes,2003,B08K4QG7PR,Elephant
+189,Love Hurts,Nazareth,1974,B0DZVQ3RGW,Hair of the Dog
+190,Gimme Shelter,The Rolling Stones,1969,B004MSRD8I,Let It Bleed
+191,The Kids Aren't Alright,The Offspring,1998,B01MY6OL07,Americana [Explicit]
+192,Self Esteem,The Offspring,1994,B07ZMJ4TM4,Smash [Explicit]
+193,Jekyll And Hyde,Five Finger Death Punch,2015,B07Y6VZXBY,A Decade Of Destruction [Explicit]
+194,S.O.S. (Sawed Off Shotgun),The Glorious Sons,2017,B07F1ZQG73,S.O.S. (Sawed Off Shotgun) [Explicit]
+195,Red Flag,Billy Talent,2006,B002LSOP5U,Red Flag
+196,Heaven Knows,The Pretty Reckless,2014,B0G24YSTH7,Heaven Knows
+197,"Dance, Dance",Fall Out Boy,2005,B001SPVPDM,From Under The Cork Tree
+198,Help,Papa Roach,2017,B07Y7F9M7Z,Crooked Teeth (Deluxe) [Explicit]
+199,You Give Love A Bad Name,Bon Jovi,1986,B07G9DNB1D,Slippery When Wet
+200,All Day And All Of The Night,The Kinks,1964,B0F196G689,"The Journey, Pt. 1"
+201,Every You Every Me,Placebo,1998,B00SRXWTWO,Without You I'm Nothing [Explicit]
+202,Paradise City,Guns N' Roses,1987,B07CQ9XP97,Appetite For Destruction [Explicit]
+203,Monsters,All Time Low (feat. blackbear),2020,B08PF87DM6,Monsters (feat. Demi Lovato and blackbear) [Explicit]
+204,Enter Sandman,Metallica,1991,B0973GPM1F,Metallica
+205,Nothin' But A Good Time,Poison,1988,B002JB30V4,Nothing But A Good Time
+206,You're The One,Greta Van Fleet,2018,B07H47VRJ4,Anthem Of The Peaceful Army
+207,I'm A Believer,The Monkees,1966,B07VVGCQSR,The Monkees 50
+208,Guerrilla Radio,Rage Against The Machine,1999,B00GPZF0JK,The Battle Of Los Angeles [Explicit]
+209,Down With The Sickness,Disturbed,2000,B001SG7CDI,The Sickness [Explicit]
+210,Stay,Maurice Williams,1960,B08R14JQZL,Summer Souvenirs
+211,Open Your Eyes,Guano Apes,1997,B001SOWY5Q,Open Your Eyes
+212,1979,The Smashing Pumpkins,1995,B00AOWIT4S,Mellon Collie And The Infinite Sadness (Deluxe Edition)
+213,Like A Stone,Audioslave,2002,B001UOIJ3U,Like A Stone [Explicit]
+214,Radioactive,Kings of Leon,2010,B0046WKGXY,Come Around Sundown (Expanded Edition)
+215,Ocean Avenue,Yellowcard,2004,B001QC9US4,Ocean Avenue
+216,Man In The Box,Alice In Chains,1990,B01F0DC2NY,Facelift [Explicit]
+217,Cherry Pie,Warrant,1990,B001VFDMTO,Cherry Pie [Explicit]
+218,Higher,Creed,1999,B0D5DSVJDD,Human Clay (Deluxe Edition)
+219,Drive,Incubus,1999,B002V6VRPI,Drive
+220,"Another Brick In The Wall, Pt. 2",Pink Floyd,1979,B076ZZ1QLT,The Wall
+221,"Girls, Girls, Girls",Mötley Crüe,1987,B0DZVDG2FW,"Girls, Girls, Girls (Deluxe Version) [Explicit]"
+222,Lonely Boy,The Black Keys,2011,B006BZIN20,El Camino
+223,Fortunate Son,Creedence Clearwater Revival,1969,B00UEE2X4I,Willy And The Poor Boys (Expanded Edition)
+224,Push,Matchbox Twenty,1996,B0F298CN3P,Exile on Mainstream (Deluxe Edition)
+225,Mr. Brightside,The Killers,2003,B08F75NX7Z,Hot Fuss
+226,Free Fallin',Tom Petty,1989,B07GTGSS2X,Full Moon Fever
+227,Come Together,The Beatles,1969,B07FT4SGR6,Abbey Road
+228,Dream On,Aerosmith,1973,B0GSS5LHBJ,Aerosmith
+229,Army Of The Night,Powerwolf,2015,B07NWDCBSJ,Blessed & Possessed
+230,"Paint It, Black",The Rolling Stones,1966,B004QBIWQS,Aftermath
+231,Everlong,Foo Fighters,1997,B00P25QW8W,The Colour And The Shape [Explicit]
+232,Tanzt du noch einmal mit mir?,Broilers,2011,B07WSGC8QD,Santa Muerte
+233,Run To You,Bryan Adams,1984,B00OW6HV2I,Reckless
+234,I Hate Everything About You,Three Days Grace,2003,B00EQZGY4Q,I Hate Everything About You
+235,Separate Ways,Journey,1983,B01MR2H4HO,Frontiers (2023 Remaster)
+236,Still Into You,Paramore,2013,B00C3G6YFO,Paramore
+237,Sharp Dressed Man,ZZ Top,1983,B07T5DTB47,Goin' 50
+238,Barracuda,Heart,1977,B01CZ9V0W0,Little Queen
+239,Last Resort,Papa Roach,2000,B07MXXYQHD,Infest [Explicit]
+240,Born To Be Wild,Steppenwolf,1968,B07GCN5VT1,Born To Be Wild (Best Of....)
+241,Buddy Holly,Weezer,1994,B0BTSC555F,Weezer (Deluxe Edition / Blue Album)
+242,Your Betrayal,Bullet For My Valentine,2010,B003EULJD0,Fever [Explicit]
+243,She Sells Sanctuary,The Cult,1985,B013NGPVI8,Love
+244,Coming Undone,Korn,2005,B09LKV61BB,See You On the Other Side [Explicit]
+245,Jailhouse Rock,Elvis Presley,1957,B002T4H92M,Elvis At The Movies
+246,Break,Three Days Grace,2009,B002N9Y98A,Break
+247,Riptide,Beartooth,2023,B0B47KYRTS,Riptide
+248,Hey Joe,Jimi Hendrix,1966,B003BGGXVA,Are You Experienced
+249,The Anthem,Good Charlotte,2002,B00255CZSI,The Young and The Hopeless
+250,Entre dos tierras,Heroes Del Silencio,1990,B016GM7O7M,Senderos de Traición
+251,1985,Bowling For Soup,2004,B001SMZDRY,1985
+252,Mother,Danzig,1988,B0096BCMKK,Danzig
+253,Dark Matter,Pearl Jam,2024,B0CVBMWFQX,Dark Matter [Explicit]
+254,Won’t Stand Down,Muse,2022,B09PT2TKL8,Won’t Stand Down
+255,School's Out,Alice Cooper,1972,B001SG9VUU,School's Out
+256,My Own Summer (Shove It),Deftones,1997,B001RY2T7A,Around the Fur [Explicit]
+257,Trouble’s Coming,Royal Blood,2020,B08HHD5STN,Trouble's Coming
+258,Panama,Van Halen,1984,B00V08HE64,1984
+259,All I Want,A Day To Remember,2010,B005OMLXIW,What Separates Me From You [Explicit]
+260,Walk This Way,Aerosmith,1975,B084NZC5RX,Pandora's Box
+261,Johnny B. Goode,Chuck Berry,1958,B07ZVTL1RC,Johnny B. Goode: His Complete '50s Chess Recordings
+262,Song 2,Blur,1997,B07VY1MFW9,Blur
+263,Stacy's Mom,Fountains Of Wayne,2003,B001QM4E30,Stacy's Mom
+264,Rockstar,Nickelback,2005,B001SG5T0Q,All the Right Reasons
+265,Raining Blood,Slayer,1986,B00BZODBBK,Reign In Blood (Expanded) [Explicit]
+266,Monster,Skillet,2009,B0038G20RY,Awake (Deluxe)
+267,Dirty Little Secret,The All-American Rejects,2005,B0H8QNR1WG,Move Along (Deluxe Edition)
+268,Just Pretend,Bad Omens,2022,B0FB9B5R6Z,THE DEATH OF PEACE OF MIND [Explicit]
+269,All Right Now,Free,1970,B001SQRMW4,Fire And Water (Deluxe Edition)
+270,Baba O'Riley,The Who,1971,B0CHM2LDXZ,Who's Next
+271,Na Na Na (Na Na Na Na Na Na Na Na Na),My Chemical Romance,2010,B004D16FBK,Danger Days: The True Lives Of The Fabulous Killjoys (Deluxe) [Explicit]
+272,Rock You Like A Hurricane,Scorpions,1984,B005YBLSN8,Comeblack
+273,Cold as Ice,Foreigner,1977,B003X2CAAK,Foreigner (Expanded)
+274,Money,Pink Floyd,1973,B0771144N6,The Dark Side of the Moon
+275,White Wedding,Billy Idol,1982,B0C695SZ8H,Billy Idol (Expanded Edition)
+276,Renegade,Styx,1978,B008KAONKU,Pieces Of Eight
+277,The Pretender,Foo Fighters,2007,B076NVWNC6,"Echoes, Silence, Patience & Grace"
+278,Be Bop a Lula,Gene Vincent,1956,B0049MF3P2,British Singles Chart - Week Ending 5 October 1956 [Explicit]
+279,Roxanne,The Police,1978,B0BDVQFLHV,Roxanne
+280,Hold The Line,TOTO,1978,B01EY4QO5W,Toto
+281,The Boys Are Back In Town,Thin Lizzy,1976,B001SQUDUM,Jailbreak
+282,LosT,Bring Me The Horizon,2023,B0BZQMBPFH,LosT [Explicit]
+283,CMFT Must Be Stopped,Corey Taylor (feat. Tech N9ne and Kid Bookie),2020,B08DN6GB2Z,CMFT [Explicit]
+284,(Don't Fear) The Reaper,Blue Öyster Cult,1976,B01HTZF7GA,Agents Of Fortune
+285,The Vengeful One,Disturbed,2015,B07VVN4SPP,Immortalized (Deluxe Edition) [Explicit]
+286,Don't Stop Believin',Journey,1981,B0B9VQ5T2P,Escape (2022 Remaster)
+287,Everybody Talks,Neon Trees,2011,B00JBYET76,Picture Show (Deluxe Edition) [Explicit]
+288,Just A Girl,No Doubt,1995,B07GVLNXYC,Tragic Kingdom
+289,Tom Sawyer,Rush,1981,B004VCEMLQ,Moving Pictures (2011 Remaster)
+290,Planet Zero,Shinedown,2022,B09QY67BW9,Planet Zero [Explicit]
+291,If Tomorrow Never Comes,Wage War,2021,B09BTMCRGY,Manic
+292,Dark Side,Blind Channel,2021,B0GXB9LNNK,Dark Side
+293,Absolute Zero,Stone Sour,2012,B07VW5595D,"House of Gold & Bones, Part 1 [Explicit]"
+294,Could Have Been Me,The Struts,2014,B01B67LLG2,Everybody Wants
+295,White Rabbit,Jefferson Airplane,1967,B001SGNS22,Surrealistic Pillow
+296,Nightmare,Avenged Sevenfold,2010,B003VE62FO,Nightmare [Explicit]
+297,Bohemian Rhapsody,Queen,1975,B0H5LSRKLB,Bohemian Rhapsody (The Original Soundtrack)
+298,Dancing With Myself,Billy Idol,1980,B0DD6WMKZ8,Dancing With Myself
+299,Duality,Slipknot,2004,B008IYGZYU,Antennas to Hell (Special Edition) [Explicit]
+300,Bark At The Moon,Ozzy Osbourne,1983,B001UH7ON8,Bark At the Moon (2002 Remaster)
+301,Bite Me,Avril Lavigne,2021,B09L9XC46Z,Bite Me [Explicit]
+302,Immigrant Song,Led Zeppelin,1970,B09LT3HYX9,Led Zeppelin III
+303,House Of The Rising Sun,The Animals,1964,B00QUQ23SA,Most of the Animals
+304,London Calling,The Clash,1979,B00EE0H5RS,London Calling (Remastered) [Explicit]
+305,Fox On The Run,Sweet,1974,B01MRVE042,"Fox on the Run (from the ""Guardians of the Galaxy 2"" Trailer)"
+306,I Wanna Be Sedated,Ramones,1978,B07VWLQYCC,Road to Ruin (40th Anniversary Deluxe Edition)
+307,Highway Star,Deep Purple,1972,B07MTH26XC,Machine Head (Remastered)
+308,Figure It Out,Royal Blood,2014,B07W15K927,Royal Blood [Explicit]

@@ -1,7 +1,0 @@
-{
-  "name": "amazon-music-connector-for-hitster-addon",
-  "version": "1.0.1",
-  "scripts": {
-    "build": "python3 build.py"
-  }
-}

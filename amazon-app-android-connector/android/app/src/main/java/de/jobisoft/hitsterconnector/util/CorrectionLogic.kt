@@ -12,18 +12,28 @@ data class CardOverride(
     val time: String,
     val source: String,
     /** The Amazon track id of the card at the time of the correction, "" for none, null if the file has no such column (then the id of the song stays). */
-    val amazonId: String? = null
+    val amazonId: String? = null,
+    /** The album of the card at the time of the correction, handled like [amazonId]: "" clears it, null (no album column in the row) keeps the album of the song. */
+    val album: String? = null
 ) {
     val key: String get() = "$setFile#$card"
 }
 
 /** `card_overrides.csv` and the export file: lines, the last-wins rule, applying one to a song. */
 object CorrectionLogic {
-    const val HEADER = "set,card,year,title,artist,time,source,amazonId"
+    const val HEADER = "set,card,year,title,artist,time,source,amazonId,album"
+
+    /** In the id column of a row that has an album but keeps the id of the song. It is no id, so it reads back as null. */
+    const val KEEP_ID = "-"
 
     fun line(o: CardOverride): String = CsvLines.line(
         listOf(o.setFile, o.card.toString(), o.year?.toString().orEmpty(), o.title, o.artist, o.time, o.source) +
-            listOfNotNull(o.amazonId) // a correction without an id (null) has seven fields
+            when {
+                // an album needs the id column in front of it, KEEP_ID stands for "the id of the song stays"
+                o.album != null -> listOf(o.amazonId ?: KEEP_ID, o.album)
+                // a correction without an id (null) has seven fields
+                else -> listOfNotNull(o.amazonId)
+            }
     )
 
     /** A line of the file, null for the header and for lines that are not one. */
@@ -33,8 +43,12 @@ object CorrectionLogic {
         if (f.size < 7) return null
         val card = f[1].toIntOrNull() ?: return null
         if (f[0].isEmpty()) return null
-        // the eighth column is the id, a row without it (or with a text that is no id) keeps the id of the song
-        return CardOverride(f[0], card, f[2].toIntOrNull(), f[3], f[4], f[5], f[6], f.getOrNull(7)?.let { AmazonId.fromInput(it) })
+        // the eighth column is the id, a row without it (or with a text that is no id) keeps the id of the song.
+        // The ninth column is the album: a row without it keeps the album of the song, an empty one clears it
+        return CardOverride(
+            f[0], card, f[2].toIntOrNull(), f[3], f[4], f[5], f[6],
+            f.getOrNull(7)?.let { AmazonId.fromInput(it) }, f.getOrNull(8)?.let { it.trim() }
+        )
     }
 
     /** The last row per (set, card), in the order the cards were first corrected. */
@@ -44,13 +58,18 @@ object CorrectionLogic {
         return latest
     }
 
-    /** The song with the corrected values. A correction without a year keeps the year, one without an id column keeps the id of the song. */
+    /** The song with the corrected values. A correction without a year keeps the year, one without an id column keeps the id of the song, one without an album column keeps the album. */
     fun apply(song: CSVSong, o: CardOverride): CSVSong = song.copy(
         title = o.title, artist = o.artist, year = o.year ?: song.year, corrected = true,
         amazonId = when {
             o.amazonId == null -> song.amazonId
             o.amazonId.isBlank() -> null
             else -> o.amazonId
+        },
+        album = when {
+            o.album == null -> song.album
+            o.album.isBlank() -> null
+            else -> o.album
         }
     )
 

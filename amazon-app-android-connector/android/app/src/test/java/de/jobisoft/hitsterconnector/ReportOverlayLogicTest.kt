@@ -59,13 +59,13 @@ class ReportOverlayLogicTest {
     @Test
     fun theShownValuesBecomeWhatTheUserSaved() {
         assertEquals(
-            ReportRefresh.Values(1984, "New Title", "New Artist", null),
-            ReportRefresh.values(2008, "Old Title", "Old Artist", null, report(17, 1984, "New Title", "New Artist"))
+            ReportRefresh.Values(1984, "New Title", "New Artist", null, null),
+            ReportRefresh.values(2008, "Old Title", "Old Artist", null, null, report(17, 1984, "New Title", "New Artist"))
         )
         // a value the report does not have stays as it was (a row of the first version has a year only)
         assertEquals(
-            ReportRefresh.Values(1984, "Old Title", "Old Artist", "B006LSV05O"),
-            ReportRefresh.values(2008, "Old Title", "Old Artist", "B006LSV05O", report(17, 1984, null, null))
+            ReportRefresh.Values(1984, "Old Title", "Old Artist", "B006LSV05O", "Alb"),
+            ReportRefresh.values(2008, "Old Title", "Old Artist", "B006LSV05O", "Alb", report(17, 1984, null, null))
         )
     }
 
@@ -73,11 +73,19 @@ class ReportOverlayLogicTest {
     fun theShownAmazonIdBecomesWhatTheUserSavedAndAReportWithoutItKeepsIt() {
         val old = report(17, 1984, "T", "A")
         assertEquals("a row without the id column keeps the id", "B006LSV05O",
-            ReportRefresh.values(2008, "T", "A", "B006LSV05O", old).amazonId)
+            ReportRefresh.values(2008, "T", "A", "B006LSV05O", null, old).amazonId)
         assertEquals("B00FU4OCDW",
-            ReportRefresh.values(2008, "T", "A", "B006LSV05O", old.copy(ourAmazonId = "B006LSV05O", cardAmazonId = "B00FU4OCDW")).amazonId)
+            ReportRefresh.values(2008, "T", "A", "B006LSV05O", null, old.copy(ourAmazonId = "B006LSV05O", cardAmazonId = "B00FU4OCDW")).amazonId)
         assertNull("an empty id clears it",
-            ReportRefresh.values(2008, "T", "A", "B006LSV05O", old.copy(ourAmazonId = "B006LSV05O", cardAmazonId = "")).amazonId)
+            ReportRefresh.values(2008, "T", "A", "B006LSV05O", null, old.copy(ourAmazonId = "B006LSV05O", cardAmazonId = "")).amazonId)
+    }
+
+    @Test
+    fun theShownAlbumBecomesWhatTheUserSavedAndAReportWithoutItKeepsIt() {
+        val old = report(17, 1984, "T", "A")
+        assertEquals("a row without the album column keeps it", "Alb", ReportRefresh.values(2008, "T", "A", null, "Alb", old).album)
+        assertEquals("New", ReportRefresh.values(2008, "T", "A", null, "Alb", old.copy(ourAlbum = "Alb", cardAlbum = "New")).album)
+        assertNull("an empty album clears it", ReportRefresh.values(2008, "T", "A", null, "Alb", old.copy(ourAlbum = "Alb", cardAlbum = "")).album)
     }
 
     // ── the quiz: the next card ────────────────────────────────────────────────

@@ -15,6 +15,6 @@ class ReportViewModel @Inject constructor(
     fun setOverlayOpen(open: Boolean) = overlay.set(open)
 
     fun report(card: ReportCard, edit: Edit, source: String) {
-        store.recordWrong(card.setFile, card.number, card.year, card.title, card.artist, edit, source, card.amazonId)
+        store.recordWrong(card.setFile, card.number, card.year, card.title, card.artist, edit, source, card.amazonId, card.album)
     }
 }

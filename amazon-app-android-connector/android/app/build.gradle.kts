@@ -8,8 +8,8 @@ plugins {
 }
 
 android {
-    // The card sets (CSV files and their names) are shared by the apps of this repository, the
-    // folder card-sets/assets at the top is added to the assets of the app. They are not copied.
+    // The card sets (CSV files and their names) are in the folder card-sets/assets at the top, which
+    // is added to the assets of the app. They are not copied.
     sourceSets {
         getByName("main") {
             assets.srcDir(rootProject.projectDir.resolve("../../card-sets/assets"))

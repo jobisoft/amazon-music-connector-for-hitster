@@ -51,7 +51,7 @@ fun ReportWrongSection(card: ReportCard?, revealed: Boolean, source: String) {
     }
     if (open) {
         WrongDialog(
-            key = card.serial, ourYear = card.year, ourTitle = card.title, ourArtist = card.artist, ourAmazonId = card.amazonId,
+            key = card.serial, ourYear = card.year, ourTitle = card.title, ourArtist = card.artist, ourAmazonId = card.amazonId, ourAlbum = card.album,
             onSave = { edit ->
                 viewModel.report(card, edit, source)
                 reported = true
