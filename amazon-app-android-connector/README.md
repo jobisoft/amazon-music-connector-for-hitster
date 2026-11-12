@@ -1,6 +1,6 @@
 # Amazon Music Connector for Hitster (Android app)
 
-The app plays the song of a scanned [Hitster](https://hitstergame.com) card in the **Amazon Music app of the same phone** and controls it with official Android media APIs. The card sets are in [../card-sets](../card-sets), their data comes from the [SongSeeker Hitster playlists](https://github.com/andygruber/songseeker-hitster-playlists) by Andreas Gruber (MIT License).
+The app plays the song of a scanned [Hitster](https://hitstergame.com) card in the **Amazon Music app of the same phone** and controls it with official Android media APIs. The card sets are in [../assets/card-data](../assets/card-data), their data is based in part on the [SongSeeker Hitster playlists](https://github.com/andygruber/songseeker-hitster-playlists) by Andreas Gruber (MIT License).
 
 Tested with a Samsung SM-A326B, Android 13 and Amazon Music 26.39.1.
 
@@ -12,7 +12,7 @@ Home has three mode buttons.
 - **Quiz Mode:** tick card sets (or "All sets"), then "Start". No camera. Random cards play one after another and the next one starts when the song ends. "Play next random card" starts it by hand. A card is played once until the deck is used up. The same song in several editions counts once. The deck is shuffled again then, and the screen says "All cards played, starting again".
 - **Reader Mode:** scan a card to see artist, year, title and "(card#N)" at once. Nothing plays unless you tap "Send to Amazon Music app". It needs no notification access.
 
-"Card Config" lists the card sets and imports CSV files from the phone (several at once). It links to this repository and to the SongSeeker repository, where card sets can be downloaded. The app finds the columns `Card#`, `Title`, `Artist`, `Year` and `AmazonID` by their names in the header, in any case and in any place, and ignores every other column. So the upstream files of SongSeeker, which have more columns, work as well, and their cards are searched by text. `Card#`, `Title` and `Artist` are needed, `Year` and `AmazonID` may be missing or empty. A file without them shows "This CSV file needs the columns Card#, Title and Artist." A card of a set that is not installed shows the error "The card set <file> is missing: This card set is not installed. Import its CSV file in Card Config. Card: <url>". Help, Open Source Licenses and About are on Home.
+"Card Config" lists the card sets and imports CSV files from the phone (several at once). It links to this repository. The app finds the columns `Card#`, `Title`, `Artist`, `Year`, `AmazonID`, `Album` and `Edition` by their names in the header, in any case and in any place, and ignores every other column. `Card#`, `Title`, `Artist` and `Year` are needed, the others may be missing or empty. A row may leave the year empty. The first filled value of `Edition` is the name of the set in the lists, a set without one shows its file name. A file without them shows "This CSV file needs the columns Card#, Title, Artist and Year." A card of a set that is not installed shows the error "The card set <file> is missing: This card set is not installed. Import its CSV file in Card Config. Card: <url>". Help, Open Source Licenses and About are on Home.
 
 ## Player controls
 
@@ -163,7 +163,7 @@ This only opens Amazon's home screen. Whether the session can be controlled show
 
 ## Card sets
 
-The bundled CSV files in `card-sets/assets/csv/` belong to the app. The phone keeps the sha256 of the copy it wrote last (SharedPreferences `seeded_card_sets`). At every start a file is copied when it is missing and never was written, and overwritten when the bundled file differs from the record. A file the user deleted stays deleted. Files with other names, for example imported by the user, are never touched. Corrections are separate, so a refresh loses nothing. The display names come from `card_sets.csv`. A set without an entry shows its file name without `.csv`.
+The bundled CSV files in `assets/card-data/` belong to the app. The phone keeps the sha256 of the copy it wrote last (SharedPreferences `seeded_card_sets`). At every start a file is copied when it is missing and never was written, and overwritten when the bundled file differs from the record. A file the user deleted stays deleted. Files with other names, for example imported by the user, are never touched. Corrections are separate, so a refresh loses nothing. The display names come from `card_sets.csv`. A set without an entry shows its file name without `.csv`.
 
 ## Tests
 

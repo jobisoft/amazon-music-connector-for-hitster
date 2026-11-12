@@ -8,12 +8,15 @@ plugins {
 }
 
 android {
-    // The card sets (CSV files and their names) are in the folder card-sets/assets at the top, which
-    // is added to the assets of the app. They are not copied.
+    // The card sets are in the folder assets/card-data at the top. The folder assets is added to the assets of
+    // the app, nothing is copied. The research data in assets/amazon-data is not part of the app.
     sourceSets {
         getByName("main") {
-            assets.srcDir(rootProject.projectDir.resolve("../../card-sets/assets"))
+            assets.srcDir(rootProject.projectDir.resolve("../../assets"))
         }
+    }
+    androidResources {
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:!amazon-data:!README.md"
     }
 
     namespace = "de.jobisoft.hitsterconnector"

@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.jobisoft.hitsterconnector.data.local.CSVFileManager
+import de.jobisoft.hitsterconnector.data.repository.CSVRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,14 +52,14 @@ class CardConfigViewModel @Inject constructor(
                 val fileName = rawName.substringAfterLast('/').ifBlank { "imported_file.csv" }
                 try {
                     withContext(Dispatchers.IO) {
-                        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                            val csvDir = File(context.filesDir, "csv_files").apply {
-                                if (!exists()) mkdirs()
-                            }
-                            FileOutputStream(File(csvDir, fileName)).use { outputStream ->
-                                inputStream.copyTo(outputStream)
-                            }
-                        } ?: throw Exception("Could not open file")
+                        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                            ?: throw Exception("Could not open file")
+                        // a file that is not a valid card set is rejected and not stored
+                        CSVRepository.parseCSV(bytes.toString(Charsets.UTF_8))
+                        val csvDir = File(context.filesDir, "csv_files").apply {
+                            if (!exists()) mkdirs()
+                        }
+                        FileOutputStream(File(csvDir, fileName)).use { it.write(bytes) }
                     }
                     added++
                 } catch (e: Exception) {

@@ -36,8 +36,8 @@ class CSVFileManager @Inject constructor(
         try {
             val prefs = context.getSharedPreferences("seeded_card_sets", Context.MODE_PRIVATE)
             val editor = prefs.edit()
-            for (name in context.assets.list("csv").orEmpty().filter { it.endsWith(".csv") }) {
-                val bytes = context.assets.open("csv/$name").use { it.readBytes() }
+            for (name in context.assets.list("card-data").orEmpty().filter { it.endsWith(".csv") }) {
+                val bytes = context.assets.open("card-data/$name").use { it.readBytes() }
                 val target = File(dir, name)
                 val decision = CardSetSeeding.decide(CardSetSeeding.sha256(bytes), target.exists(), prefs.getString(name, null))
                 if (decision.action != SeedAction.LEAVE) target.writeBytes(bytes)

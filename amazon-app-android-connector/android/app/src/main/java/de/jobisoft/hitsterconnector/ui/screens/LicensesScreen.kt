@@ -32,7 +32,7 @@ fun LicensesScreen(
             var markdownText = reader.use { it.readText() }
             // the license text of the card data is the file that ships with the card sets
             val songSeekerLicense = try {
-                context.assets.open("csv/LICENSE-songseeker-hitster-playlists.txt").bufferedReader().use { it.readText() }
+                context.assets.open("card-data/LICENSE-songseeker-hitster-playlists.txt").bufferedReader().use { it.readText() }
             } catch (_: Exception) {
                 null
             }

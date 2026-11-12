@@ -49,7 +49,7 @@ class AmazonIdColumnTest {
 
     @Test
     fun theIdOfRehabInTheOriginalEditionIsSet() {
-        val songs = CSVRepository.parseCSV(File("../../../card-sets/assets/csv/hitster-de-aaaa0075.csv").readText()).songsByIndex
+        val songs = CSVRepository.parseCSV(File("../../../assets/card-data/hitster-de-aaaa0075.csv").readText()).songsByIndex
         assertEquals("B006LSV05O", songs.getValue(103).amazonId)
     }
 }

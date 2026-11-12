@@ -7,9 +7,9 @@ Android app (amazon-app-android-connector)
 Web scanner add-on and helper app (amazon-web-scanner)
   Mozilla Public License 2.0, see amazon-web-scanner/addon/LICENSE.
 
-Card data (card-sets)
+Card data (assets/card-data)
   MIT License, Copyright (c) 2024 Andreas Gruber, taken from
   https://github.com/andygruber/songseeker-hitster-playlists, see
-  card-sets/assets/csv/LICENSE-songseeker-hitster-playlists.txt.
+  assets/card-data/LICENSE-songseeker-hitster-playlists.txt.
 
 Third-party libraries are listed in the LICENSES_THIRD_PARTY.md of the Android app.

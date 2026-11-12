@@ -1,44 +1,50 @@
 package de.jobisoft.hitsterconnector.data.local
 
-import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
+import de.jobisoft.hitsterconnector.data.repository.CSVRepository
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Display names of the card sets, from the asset `card_sets.csv` (columns File,Game, like the
- * `playlists.csv` of songseeker-hitster-playlists). A set without an entry, for example one the
- * user added, shows its file name without ".csv".
+ * Display names of the card sets. The name is in the file of the set itself: the first non-empty value
+ * of its column `Edition`. A set without one, for example one the user added, shows its file name
+ * without ".csv".
  */
 @Singleton
 class CardSetNames @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    private val csvFileManager: CSVFileManager
 ) {
-    private val names: Map<String, String> by lazy {
-        try {
-            context.assets.open("card_sets.csv").bufferedReader().use { parse(it.readText()) }
-        } catch (_: Exception) {
-            emptyMap()
+    private data class Entry(val stamp: Long, val size: Long, val name: String?)
+
+    private val cache = HashMap<String, Entry>()
+
+    @Synchronized
+    fun displayName(fileName: String): String {
+        val file = csvFileManager.getLocalFile(fileName)
+        val name = if (file != null && file.exists()) {
+            val cached = cache[file.name]
+            if (cached != null && cached.stamp == file.lastModified() && cached.size == file.length()) {
+                cached.name
+            } else {
+                editionOf(file).also { cache[file.name] = Entry(file.lastModified(), file.length(), it) }
+            }
+        } else {
+            null
         }
+        return name ?: fallback(fileName)
     }
 
-    fun displayName(fileName: String): String = displayName(names, fileName)
-
     companion object {
-        /** "File,Game" lines (the first line is the header) to file name -> name. */
-        fun parse(csv: String): Map<String, String> {
-            val result = LinkedHashMap<String, String>()
-            for (line in csv.lineSequence().drop(1)) {
-                val comma = line.indexOf(',')
-                if (comma <= 0) continue
-                val file = line.substring(0, comma).trim().trim('"')
-                val game = line.substring(comma + 1).trim().trim('"')
-                if (file.isNotEmpty() && game.isNotEmpty()) result[file] = game
-            }
-            return result
+        /** The name in the column `Edition` of a card set file, null if there is none or the file is not readable. */
+        internal fun editionOf(file: File): String? = editionOf(try { file.readText() } catch (_: Exception) { return null })
+
+        internal fun editionOf(csv: String): String? = try {
+            CSVRepository.parseCSV(csv).edition
+        } catch (_: Exception) {
+            null
         }
 
-        fun displayName(names: Map<String, String>, fileName: String): String =
-            names[fileName] ?: fileName.removeSuffix(".csv")
+        /** The file name without ".csv". */
+        fun fallback(fileName: String): String = fileName.removeSuffix(".csv")
     }
 }

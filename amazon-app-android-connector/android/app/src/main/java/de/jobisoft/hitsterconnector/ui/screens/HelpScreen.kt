@@ -65,7 +65,7 @@ fun HelpScreen(
                         • A song is paused one second before its end, so Amazon should not go on with another song.
                         • Amazon may play another version of a song, for example a remix. The app then says so.
                         • If the Amazon Music app stays on top, go back to this app.
-                        • "Card Config" imports more card sets from CSV files on the phone.
+                        • "Card Config" imports more card sets from CSV files on the phone. A file needs the columns Card#, Title, Artist and Year.
                     """.trimIndent()
                 )
 

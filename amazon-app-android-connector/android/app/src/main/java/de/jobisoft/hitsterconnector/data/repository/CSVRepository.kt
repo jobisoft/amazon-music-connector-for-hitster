@@ -17,7 +17,9 @@ class CSVRepository @Inject constructor(
     private val overrides: CardOverrides
 ) {
     internal data class ParsedCSV(
-        val songsByIndex: Map<Int, CSVSong>
+        val songsByIndex: Map<Int, CSVSong>,
+        /** The name of the card set: the first non-empty value of the column `Edition`, or null. */
+        val edition: String? = null
     )
     
     /**
@@ -82,13 +84,16 @@ class CSVRepository @Inject constructor(
     // the parsing is pure: it does not use the files of the app
     companion object {
         /** The text of the error for a file without our columns. */
-        const val MISSING_COLUMNS = "This CSV file needs the columns Card#, Title and Artist."
+        const val MISSING_COLUMNS = "This CSV file needs the columns Card#, Title, Artist and Year."
+
+        /** The text of the error for a row without a value in one of them, with the line number of the row. */
+        const val MISSING_VALUES = "Line %d of this CSV file needs a number, a title, an artist and a year."
 
         /**
          * Parse CSV content into a map from card number to song. The columns are found by their names in the
-         * header, in any case and in any place: `Card#`, `Title` and `Artist` are needed, `Year` and `AmazonID`
-         * may be missing or empty. Every other column (the upstream files of SongSeeker have `URL`,
-         * `Hashed Info`, `Youtube-Title`, `ISRC`, `Album`) is ignored. A file without the three needed columns
+         * header, in any case and in any place: `Card#`, `Title`, `Artist` and `Year` are needed, in the header and with a value in every row (a file with a row that lacks one is rejected as a whole, Card# and Year are numbers), `AmazonID`,
+         * `Album` and `Edition` (the name of the card set, in its first filled row) may be missing or empty.
+         * Every other column is ignored. A file without the three needed columns
          * in its header gives an error. Handles RFC 4180 compliant CSV with quoted fields.
          */
         internal fun parseCSV(csvContent: String): ParsedCSV {
@@ -100,26 +105,33 @@ class CSVRepository @Inject constructor(
             val yearIndex = header.indexOf("year")
             val amazonIdIndex = header.indexOf("amazonid")
             val albumIndex = header.indexOf("album")
-            if (cardIndex < 0 || titleIndex < 0 || artistIndex < 0) throw Exception(MISSING_COLUMNS)
+            val editionIndex = header.indexOf("edition")
+            if (cardIndex < 0 || titleIndex < 0 || artistIndex < 0 || yearIndex < 0) throw Exception(MISSING_COLUMNS)
 
             val songsByIndex = mutableMapOf<Int, CSVSong>()
-            for (line in lines.drop(1)) {
+            var edition: String? = null
+            for ((lineIndex, line) in lines.withIndex().drop(1)) {
                 if (line.isBlank()) continue
+                val lineNumber = lineIndex + 1
                 val columns = parseCSVLine(line)
-                val card = columns.getOrNull(cardIndex)?.trim()?.toIntOrNull() ?: continue
+                if (edition == null) edition = columns.getOrNull(editionIndex)?.trim()?.ifBlank { null }
+                val card = columns.getOrNull(cardIndex)?.trim()?.toIntOrNull()
                 val title = columns.getOrNull(titleIndex)?.trim().orEmpty()
                 val artist = columns.getOrNull(artistIndex)?.trim().orEmpty()
-                if (title.isBlank() || artist.isBlank()) continue
+                val year = columns.getOrNull(yearIndex)?.trim()?.toIntOrNull()
+                if (card == null || title.isBlank() || artist.isBlank() || year == null) {
+                    throw Exception(MISSING_VALUES.format(lineNumber))
+                }
                 songsByIndex[card] = CSVSong(
                     index = card,
                     title = title,
                     artist = artist,
-                    year = columns.getOrNull(yearIndex)?.trim()?.toIntOrNull(),
+                    year = year,
                     amazonId = columns.getOrNull(amazonIdIndex)?.trim()?.ifBlank { null },
                     album = columns.getOrNull(albumIndex)?.trim()?.ifBlank { null }
                 )
             }
-            return ParsedCSV(songsByIndex = songsByIndex)
+            return ParsedCSV(songsByIndex = songsByIndex, edition = edition)
         }
 
         /**

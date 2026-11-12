@@ -10,7 +10,7 @@ import re
 import tempfile
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-CSV_DIR = os.path.join(REPO, "card-sets", "assets", "csv")
+CSV_DIR = os.path.join(REPO, "assets", "card-data")
 OUT_DIR = os.path.join(REPO, "assets", "amazon-data")
 
 STAGES = ("track_search", "album_search")

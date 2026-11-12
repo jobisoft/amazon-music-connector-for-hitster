@@ -131,7 +131,7 @@ One JSON document (not JSON lines) with exactly one set and a list of card entri
 }
 ```
 
-`set` is the CSV name without `.csv`. The tool reads `card-sets/assets/csv/NAME.csv` and writes `assets/amazon-data/NAME.research.jsonl`. Every entry has `card` (a number in that CSV) and `job`. There is exactly one entry per card, a repeated card is an error. Unknown fields, on the top level or in an entry, are an error.
+`set` is the CSV name without `.csv`. The tool reads `assets/card-data/NAME.csv` and writes `assets/amazon-data/NAME.research.jsonl`. Every entry has `card` (a number in that CSV) and `job`. There is exactly one entry per card, a repeated card is an error. Unknown fields, on the top level or in an entry, are an error.
 
 | Job | Fields | What it does |
 | --- | --- | --- |

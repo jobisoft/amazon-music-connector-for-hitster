@@ -2,44 +2,48 @@ package de.jobisoft.hitsterconnector
 
 import de.jobisoft.hitsterconnector.data.local.CardSetNames
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
 class CardSetNamesTest {
 
-    private val names = CardSetNames.parse(File("../../../card-sets/assets/card_sets.csv").readText())
+    private val bundled = File("../../../assets/card-data").listFiles { f -> f.extension == "csv" }!!.sortedBy { it.name }
+
+    private fun nameOf(file: String) = CardSetNames.editionOf(File("../../../assets/card-data/$file"))
 
     @Test
-    fun knownFilesHaveTheirGameName() {
-        assertEquals("Hitster Deutschland", CardSetNames.displayName(names, "hitster-de.csv"))
-        assertEquals("Hitster Deutschland Rock", CardSetNames.displayName(names, "hitster-de-aaaa0039.csv"))
-        assertEquals("Hitster Deutschland 2025", CardSetNames.displayName(names, "hitster-de-aaaa0075.csv"))
-        assertEquals(
-            "Hitster Deutschland Movies & TV Soundtracks Expansion Pack",
-            CardSetNames.displayName(names, "hitster-de-aaaa0026.csv")
-        )
-        assertEquals("Hitster magyar kiadás", CardSetNames.displayName(names, "hitster-hu-aaae0003.csv"))
-    }
-
-    @Test
-    fun unknownFileFallsBackToTheFileNameWithoutCsv() {
-        assertEquals("my-own-set", CardSetNames.displayName(names, "my-own-set.csv"))
-        assertEquals("no-extension", CardSetNames.displayName(names, "no-extension"))
-        assertEquals("hitster-de", CardSetNames.displayName(emptyMap(), "hitster-de.csv"))
+    fun knownFilesHaveTheirName() {
+        assertEquals("Hitster Deutschland", nameOf("hitster-de.csv"))
+        assertEquals("Hitster Deutschland Rock", nameOf("hitster-de-aaaa0039.csv"))
+        assertEquals("Hitster Deutschland 2025", nameOf("hitster-de-aaaa0075.csv"))
+        assertEquals("Hitster Deutschland Movies & TV Soundtracks Expansion Pack", nameOf("hitster-de-aaaa0026.csv"))
+        assertEquals("Hitster magyar kiadás", nameOf("hitster-hu-aaae0003.csv"))
     }
 
     @Test
     fun everyBundledCardSetHasAName() {
-        val bundled = File("../../../card-sets/assets/csv").listFiles { f -> f.extension == "csv" }!!.map { it.name }
         assertTrue(bundled.isNotEmpty())
-        for (file in bundled) assertTrue("no name for $file", file in names)
-        assertEquals(bundled.size, names.size)
+        for (file in bundled) assertTrue("no Edition in ${file.name}", !CardSetNames.editionOf(file).isNullOrBlank())
     }
 
     @Test
-    fun parserSkipsHeaderBlankLinesAndQuotes() {
-        val parsed = CardSetNames.parse("File,Game\n\na.csv,\"Name A\"\nbroken line\nb.csv,Name B, with comma\n")
-        assertEquals(mapOf("a.csv" to "Name A", "b.csv" to "Name B, with comma"), parsed)
+    fun theFirstFilledValueWinsAndOtherColumnOrdersWork() {
+        val csv = "Edition,Card#,Artist,Title,Year\n,1,A,T1,1990\nMy Set,2,B,T2,1991\nOther,3,C,T3,1992\n"
+        assertEquals("My Set", CardSetNames.editionOf(csv))
+    }
+
+    @Test
+    fun noColumnOrNoValueGivesNoName() {
+        assertNull(CardSetNames.editionOf("Card#,Title,Artist,Year\n1,T,A,1990\n"))
+        assertNull(CardSetNames.editionOf("Card#,Title,Artist,Year,Edition\n1,T,A,1990,\n"))
+        assertNull(CardSetNames.editionOf("not a card set"))
+    }
+
+    @Test
+    fun fallbackIsTheFileNameWithoutCsv() {
+        assertEquals("my-own-set", CardSetNames.fallback("my-own-set.csv"))
+        assertEquals("no-extension", CardSetNames.fallback("no-extension"))
     }
 }

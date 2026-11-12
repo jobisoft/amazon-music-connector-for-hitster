@@ -101,31 +101,32 @@ class CardSetFormatsTest {
     }
 
     @Test
-    fun unknownColumnsAreIgnoredAndYearAndIdMayBeMissingOrEmpty() {
+    fun unknownColumnsAreIgnoredAndTheIdMayBeEmpty() {
         val songs = songs(
             """
             Card#,Title,Artist,Whatever,Year,URL
-            103,Rehab,Amy Winehouse,anything,,not read
+            103,Rehab,Amy Winehouse,anything,2006,not read
             104,Hello,The Beatles,else,1967,
             """.trimIndent()
         )
-        assertNull(songs.getValue(103).year)
+        assertEquals(2006, songs.getValue(103).year)
         assertEquals(1967, songs.getValue(104).year)
         assertNull(songs.getValue(104).amazonId)
     }
 
     @Test
-    fun rowsWithoutANumberOrWithoutTitleOrArtistAreSkipped() {
-        val songs = songs(
-            """
-            Card#,Title,Artist,Year
-            x,No Number,A,1990
-            2,,No Title,1990
-            3,No Artist,,1990
-            4,Fine,Artist,1990
-            """.trimIndent()
-        )
-        assertEquals(setOf(4), songs.keys)
+    fun aRowWithoutANumberATitleAnArtistOrAYearRejectsTheWholeFile() {
+        val rows = listOf("x,No Number,A,1990", "2,,No Title,1990", "3,No Artist,,1990", "4,No Year,A,", "5,Bad Year,A,soon")
+        for (bad in rows) {
+            val error = try {
+                songs("Card#,Title,Artist,Year\n1,Fine,Artist,1990\n$bad")
+                null
+            } catch (e: Exception) {
+                e.message
+            }
+            assertEquals(bad, String.format(CSVRepository.MISSING_VALUES, 3), error)
+        }
+        assertEquals(setOf(1, 4), songs("Card#,Title,Artist,Year\n1,Fine,Artist,1990\n\n4,Fine,Artist,1990\n").keys)
     }
 
     @Test
@@ -139,6 +140,7 @@ class CardSetFormatsTest {
             "103,Rehab,Amy Winehouse,2006,https://www.youtube.com/watch?v=t2TKqJ2FXGM", // no header at all
             "number,song,by,when\n1,Rehab,Amy Winehouse,2006",
             "Card#,Title,Year\n1,Rehab,2006", // no artist
+            "Card#,Title,Artist\n1,Rehab,Amy Winehouse", // no year
             "Title,Artist,Year\nRehab,Amy Winehouse,2006", // no card number
             ""
         )) {

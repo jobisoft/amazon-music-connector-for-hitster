@@ -8,7 +8,7 @@ The libraries below are the ones this application uses. The versions are the one
 
 ## Card data
 
-The card sets in `card-sets/assets/csv` map each Hitster card number to a song. They are based in part on [songseeker-hitster-playlists](https://github.com/andygruber/songseeker-hitster-playlists) by Andreas Gruber (MIT License, Copyright (c) 2024 Andreas Gruber). They differ from it in places and have additional columns, for example `AmazonID`. The license text is in `card-sets/assets/csv/LICENSE-songseeker-hitster-playlists.txt`.
+The card sets in `assets/card-data` map each Hitster card number to a song. They are based in part on [songseeker-hitster-playlists](https://github.com/andygruber/songseeker-hitster-playlists) by Andreas Gruber (MIT License, Copyright (c) 2024 Andreas Gruber). They differ from it in places and have additional columns, for example `AmazonID`. The license text is in `assets/card-data/LICENSE-songseeker-hitster-playlists.txt`.
 
 ---
 
@@ -137,4 +137,4 @@ These licenses are fully compatible with the **MIT License** under which this fo
 
 ## Card set names
 
-`card-sets/assets/card_sets.csv` maps the file names of the bundled card sets to their display names. The names are based in part on `playlists.csv` of the same project (MIT License, see above). The Open Source Licenses screen shows the license text.
+The set names in the column `Edition` of the card set files are based in part on `playlists.csv` of the same project (MIT License, see above). The Open Source Licenses screen shows the license text.

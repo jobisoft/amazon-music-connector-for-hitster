@@ -50,12 +50,6 @@ fun CardConfigScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            Text(
-                text = "The app supports the CSV format of SongSeeker. Card sets can be downloaded from the project repositories below and imported here.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
             OutlinedButton(
                 onClick = {
                     context.startActivity(
@@ -65,16 +59,6 @@ fun CardConfigScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
             ) {
                 Text("This project on GitHub")
-            }
-            OutlinedButton(
-                onClick = {
-                    context.startActivity(
-                        Intent(Intent.ACTION_VIEW, "https://github.com/andygruber/songseeker-hitster-playlists".toUri())
-                    )
-                },
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp)
-            ) {
-                Text("SongSeeker playlists on GitHub")
             }
 
             Row(
