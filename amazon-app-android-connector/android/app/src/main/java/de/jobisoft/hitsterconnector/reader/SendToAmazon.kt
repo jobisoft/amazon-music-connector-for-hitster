@@ -20,10 +20,9 @@ object SendToAmazon {
         hasCard && problem == null && status != SendStatus.SENDING
 
     /** The one line under the buttons: what the player does, "" for nothing to say. An error is shown as a red box instead. */
-    fun statusLine(status: SendStatus, songEnded: Boolean, versionNote: String? = null, playStatus: String? = null): String {
+    fun statusLine(status: SendStatus, songEnded: Boolean, playStatus: String? = null): String {
         val base = baseLine(status, songEnded)
         return when {
-            base.isNotEmpty() && status == SendStatus.PLAYING && versionNote != null -> "$base\n$versionNote"
             status == SendStatus.SENDING && playStatus != null -> "$base\n$playStatus"
             else -> base
         }

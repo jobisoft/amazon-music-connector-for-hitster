@@ -111,6 +111,33 @@ object DebugLog {
         }
     }
 
+    /**
+     * A picture for the log sink (it saves it in tools/debug_images): the frame that the OCR reads, for example. Fire and forget,
+     * dropped when there is no sink. [name] ends in .jpg.
+     */
+    fun image(name: String, bitmap: android.graphics.Bitmap) {
+        if (!ENABLED) return
+        val url = sinkUrl ?: return
+        try {
+            val out = java.io.ByteArrayOutputStream()
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 88, out)
+            val bytes = out.toByteArray()
+            scope.launch {
+                try {
+                    val request = Request.Builder()
+                        .url(url.trimEnd('/') + "/image?name=" + java.net.URLEncoder.encode(name, "UTF-8"))
+                        .post(bytes.toRequestBody("image/jpeg".toMediaType()))
+                        .build()
+                    client.newCall(request).execute().close()
+                } catch (_: Exception) {
+                    // the next event searches the sink again
+                }
+            }
+        } catch (_: Throwable) {
+            // a debug picture must never crash the app
+        }
+    }
+
     private fun toJson(value: Any?): Any? = when (value) {
         null -> JSONObject.NULL
         is Number -> JsonSafe.number(value)

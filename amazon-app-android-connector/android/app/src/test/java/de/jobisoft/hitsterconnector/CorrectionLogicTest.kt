@@ -133,7 +133,7 @@ class CorrectionLogicTest {
     fun theExportHasTheHeaderAndTheLatestCorrectionPerCard() {
         val content = CorrectionLogic.exportContent(listOf(override(17, 1990, time = "t1"), override(17, 1984, time = "t2"), override(5, 2001)))
         val lines = content.trimEnd().lines()
-        assertEquals("set,card,year,title,artist,time,source,amazonId,album", lines[0])
+        assertEquals("set,card,year,title,artist,time,source,amazonId,album,edition", lines[0])
         assertEquals(3, lines.size)
         assertTrue(lines[1].startsWith("$set,17,1984,"))
         assertTrue(lines[2].startsWith("$set,5,2001,"))
@@ -153,7 +153,7 @@ class CorrectionLogicTest {
 
     @Test
     fun anEmptyExportHasOnlyTheHeader() {
-        assertEquals("set,card,year,title,artist,time,source,amazonId,album\n", CorrectionLogic.exportContent(emptyList()))
+        assertEquals("set,card,year,title,artist,time,source,amazonId,album,edition\n", CorrectionLogic.exportContent(emptyList()))
     }
 
     @Test

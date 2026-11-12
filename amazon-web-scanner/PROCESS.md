@@ -36,6 +36,22 @@ All work is done with job files (one JSON document with the set and a list of ca
 - The artist must match.
 - Year and duration are hints only, because Amazon data can be wrong (a best-of from 1980, years that differ by one).
 - Between two releases of the same year, prefer the plain album without an edition addition (Deluxe, Expanded, Anniversary).
+- Avoid releases that are marked [Explicit], in the album name or in the title, so that the game can be played with children. Take a clean version or one without the label. If only explicit releases exist, the card is shown to the user.
+- A single or a plain album is preferred, but a run of 5 hits is enough. If those 5 hits show only samplers or best-of albums, a sampler is fine and the search ends there.
+
+## Explicit and clean releases
+
+What was seen while filling `hitster-de`, 0039 and 0075 (2026-11-10). The rule itself is in "Which release to pick".
+
+- The label in the album name sits on the release, not on the song. `Album [Explicit]` and `Album [Clean]` are two releases of the same album with different track ids. A harmless song can be on an album with the label.
+- The song itself is marked by a small **E** that Amazon shows next to its title on the track page. In the text of the page it is a line `E` right after the title ("I Love It (Explicit)", E, Icona Pop). Seen on 2026-11-10: `B00IPKLH8G` (I Love It) has the E, `B00IUCO6PU` (the clean twin) has none. `B006LSV05O` (Rehab, album "Back To Black (Bonus track) [Explicit]") and `B076Y18JYY` (Just Give Me A Reason, album "The Truth About Love [Explicit]") have no E, so the songs are not explicit although the album name says so. The E is the sign to trust, the album label alone is not. The `meta` job reads it into the field `explicit` of the hit (true or false).
+- Sometimes the track title has the label too ("I Love It (Explicit)", "Gold Digger [Clean]"). The rows of the `/songs` page have no album, so the label of the album shows only after a `meta` job on the hit.
+- The clean twin is usually next to the explicit one in the same list, with the same title and nearly the same length (within a second). Examples: I Love It `B00IPKLH8G` (2:37, explicit) and `B00IUCO6PU` (2:36, clean), Gold Digger `B001SVENRG` (3:28, explicit) and `B00MEARTCG` (3:27, clean), Valerie on "Version [Explicit]" `B01F0G31C2` and "Version [Clean]" `B07D6GG4SK`.
+- A single named like the song has often no label at all. Valerie `B076P6ZQ9G` (album "Valerie") is such a single.
+- Not every explicit release has a clean one. "Just Give Me A Reason" only showed releases of "The Truth About Love [Explicit]", and "Die Eine" of Die Firma only the explicit deluxe edition of 1998. The clean one found for "Die Eine" (`B089DQW9VZ`, "Krieg Und Frieden") is a new recording of 2005, which the user accepted for a game with children.
+- To find the clean twin, search with the title, the artist and the album name without the label, then `meta` the hits (at most 5). Prefer a hit with `[Clean]` or without a label over one with `[Explicit]`. If only explicit hits exist, the card goes to the user.
+- The `Title` column of a card never has the label. Only the `Album` column can.
+- State on 2026-11-10: albums with "Explicit" in the name are on 83 cards of 0039, 59 of 0075 and 44 of `hitster-de` (142 different tracks, 44 of them in more than one set). Only a handful have been switched to a clean twin so far (I Love It, Gold Digger, Valerie). The rest is to be reviewed.
 
 ## What the searches miss
 

@@ -3,6 +3,7 @@ package de.jobisoft.hitsterconnector.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.jobisoft.hitsterconnector.data.local.CSVFileManager
+import de.jobisoft.hitsterconnector.data.local.CardOverrides
 import de.jobisoft.hitsterconnector.data.local.CardSetNames
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,13 +23,16 @@ data class QuizSetsState(
 @HiltViewModel
 class QuizSetsViewModel @Inject constructor(
     csvFileManager: CSVFileManager,
-    cardSetNames: CardSetNames
+    cardSetNames: CardSetNames,
+    overrides: CardOverrides
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
         QuizSetsState(
-            sets = csvFileManager.getAllLocalFiles()
-                .map { QuizSet(it.name, cardSetNames.displayName(it.name)) }
+            // the sets with a file, and the sets that only exist as corrections (cards read by the reader)
+            sets = (csvFileManager.getAllLocalFiles().map { it.name } + overrides.sets())
+                .distinct()
+                .map { QuizSet(it, cardSetNames.displayName(it)) }
                 .sortedBy { it.name.lowercase() }
         )
     )

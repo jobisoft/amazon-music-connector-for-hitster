@@ -472,10 +472,26 @@ def parse_track_text(text):
     return duration, None, None
 
 
+EXPLICIT_RE = re.compile(r"(?:^|\n|\| )E(?:\n| \||$)")
+
+
+def parse_explicit(text):
+    """True if the track page marks the song as explicit, False if it does not, None if there is no text.
+
+    Amazon shows a small E next to the title of an explicit song. In the text of the page it is a line `E`
+    (or ` | E | ` in the fake page of the tests) right after the title. Only the head of the text is looked at,
+    the lists further down hold the titles of other songs. The word "Explicit" in an album name does not count.
+    """
+    if not text:
+        return None
+    return EXPLICIT_RE.search(text[:400]) is not None
+
+
 def read_track_page(cl, track_id):
     """Load the track page of a song id and read it. Each field is read on its own.
 
-    Returns a dict with meta_title, album_name, duration, album_release_date and album_year, where a field that
+    Returns a dict with meta_title, album_name, duration, album_release_date, album_year and explicit (True when the
+    page shows the E of an explicit song, False when it does not), where a field that
     could not be read is None, plus missing (a list of album, duration and date that were not found).
     Returns None if nothing was found at all (no album, no duration, no date). Raises HostError if the page is the
     page of another song. It waits for the page title (' Song von '), then once more for the text, with a fixed limit.
@@ -499,7 +515,7 @@ def read_track_page(cl, track_id):
         return None
     missing = [name for name, value in (("album", album), ("duration", duration), ("date", date)) if value is None]
     return {"meta_title": parsed[0] if parsed else None, "album_name": album, "duration": duration,
-            "album_release_date": date, "album_year": year, "missing": missing}
+            "album_release_date": date, "album_year": year, "explicit": parse_explicit(text), "missing": missing}
 
 
 def track_page_duration(cl, track_id):

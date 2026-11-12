@@ -17,19 +17,20 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /** Where a card is on its way to the speakers. */
-enum class SendState { IDLE, SENDING, SUCCESS, FAILED }
+/** [UNKNOWN]: the scan is a card the app does not have, the screen says so and offers Cancel (nothing is sent to Amazon Music). */
+enum class SendState { IDLE, SENDING, SUCCESS, FAILED, UNKNOWN }
 
 /** Which card of which set is on the screen (for "Report as wrong"). */
 data class CardRef(val setFile: String, val number: Int)
 
-/** What the reveal box shows once it is tapped. The year is null for the test song. */
+/** What the reveal box shows once it is tapped. */
 data class SongInfo(val title: String, val artist: String, val year: Int?, val amazonId: String? = null, val album: String? = null)
 
 data class GameUiState(
     val sendState: SendState = SendState.IDLE,
     val message: String? = null,
-    /** The reason why the card was not found, shown together with the test song. */
-    val warning: String? = null,
+    /** What the screen says about an unknown card, in the state [SendState.UNKNOWN]. */
+    val unknown: UnknownScan? = null,
     /** False after "stop", then the middle button plays the song again. */
     val playing: Boolean = true,
     /** Where the song is and how long it is, in seconds. 0 while unknown. */
@@ -41,20 +42,16 @@ data class GameUiState(
     val song: SongInfo? = null,
     /** Display name of the card set, null if unknown. */
     val setName: String? = null,
-    /** True if a test song plays in place of an unknown card. */
-    val isTestSong: Boolean = false,
     val revealed: Boolean = false,
     /** True while the song that plays is stopped before the next request, the buttons wait. */
     val stopping: Boolean = false,
     /** A short line for the result screen, for example "All cards played, starting again". */
     val info: String? = null,
-    /** "Amazon played a different version: ..." if the song is a remix, live version etc. Null if the version looks right. */
-    val versionNote: String? = null,
     /** True from the end of the song until the next request. */
     val songEnded: Boolean = false,
     /** The user pressed Stop: paused and rewound. Play or restart go on from the start offset. */
     val stopped: Boolean = false,
-    /** The card on the screen, null for the test song of an unknown card. */
+    /** The card on the screen. */
     val cardRef: CardRef? = null,
     /** Counts up with every card shown, a new value means a new card. */
     val cardSerial: Int = 0,
@@ -202,7 +199,7 @@ abstract class PlayerViewModel(
 
     /** Plays the card and shows the result. [mapping] is the song, [setName] the set it is from. */
     protected suspend fun send(
-        mapping: SongMapping, setName: String?, isTestSong: Boolean, warning: String?, info: String? = null, cardRef: CardRef? = null
+        mapping: SongMapping, setName: String?, info: String? = null, cardRef: CardRef? = null
     ) {
         if (leaving) return
         sendJob = currentCoroutineContext()[Job]
@@ -210,7 +207,6 @@ abstract class PlayerViewModel(
         result.fold(
             onSuccess = { answer ->
                 _uiState.value = _uiState.value.copy(
-                    versionNote = answer.versionNote,
                     sendState = SendState.SUCCESS,
                     playing = true,
                     position = 0f,
@@ -219,10 +215,9 @@ abstract class PlayerViewModel(
                     message = null,
                     status = null,
                     canCancel = false,
-                    warning = warning,
-                    song = SongInfo(mapping.title, mapping.artist, if (isTestSong) null else mapping.year, mapping.amazonId, mapping.album),
+                    unknown = null,
+                    song = SongInfo(mapping.title, mapping.artist, mapping.year, mapping.amazonId, mapping.album),
                     setName = setName,
-                    isTestSong = isTestSong,
                     revealed = false,
                     info = info,
                     cardRef = cardRef,
@@ -232,6 +227,12 @@ abstract class PlayerViewModel(
             onFailure = { fail(it.message ?: "Unknown error") }
         )
         if (_uiState.value.sendState == SendState.SUCCESS) startPolling()
+    }
+
+    /** An unknown card: the screen says so, nothing is sent. Cancel brings the camera back ([cancelSending]). */
+    protected fun showUnknown(scan: UnknownScan) {
+        cancelOffer?.cancel()
+        _uiState.value = GameUiState(sendState = SendState.UNKNOWN, unknown = scan)
     }
 
     protected fun fail(message: String) {
@@ -276,6 +277,11 @@ abstract class PlayerViewModel(
      * is back on, and the screen before the scan comes back (the camera).
      */
     fun cancelSending() {
+        // an unknown card: nothing was sent, the camera comes back at once
+        if (_uiState.value.sendState == SendState.UNKNOWN) {
+            reset()
+            return
+        }
         if (_uiState.value.sendState != SendState.SENDING || stopping) return
         stopping = true
         played = true

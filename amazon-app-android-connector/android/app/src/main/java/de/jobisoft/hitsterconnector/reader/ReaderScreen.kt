@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,7 +39,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -51,11 +56,12 @@ import de.jobisoft.hitsterconnector.ui.ReportCard
 import de.jobisoft.hitsterconnector.ui.ReportWrongSection
 import de.jobisoft.hitsterconnector.ui.components.BackButton
 import de.jobisoft.hitsterconnector.ui.components.QRCodeScanner
+import de.jobisoft.hitsterconnector.ui.components.SquareScanWindow
 import de.jobisoft.hitsterconnector.ui.components.SongTexts
 import de.jobisoft.hitsterconnector.ui.screens.ErrorBoxes
 import de.jobisoft.hitsterconnector.ui.screens.KeepScreenOn
 
-/** Reader mode: scan a card and see its values at once. If something is wrong: "Report as wrong". If not: scan the next card. */
+/** Reader mode: scan a card and see its values at once. If something is wrong: "Update manually" or "Update via OCR". If not: scan the next card. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReaderScreen(
@@ -92,7 +98,7 @@ fun ReaderScreen(
                     TextButton(onClick = {
                         val corrections = viewModel.corrections()
                         if (corrections.isEmpty()) {
-                            viewModel.say("Nothing to export yet. Use \"Report as wrong\" on a card first.")
+                            viewModel.say("Nothing to export yet. Use \"Update manually\" on a card first.")
                         } else if (!ExportShare.share(context, corrections)) {
                             viewModel.say("The export did not work.")
                         }
@@ -103,13 +109,19 @@ fun ReaderScreen(
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             CountersBar(scanned = ui.scanned, updated = ui.counters.updated)
-            Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
+            SquareScanWindow(modifier = Modifier.fillMaxWidth()) {
                 if (hasPermission) {
+                    val analysing = ui.ocr?.phase == OcrPhase.ANALYSING
                     QRCodeScanner(
                         onQRCodeScanned = { viewModel.onCode(it) },
                         modifier = Modifier.fillMaxSize(),
-                        isActive = true
+                        // the camera is off while the analysis reads the collected pictures
+                        isActive = !analysing,
+                        // in the OCR mode the camera also hands over a picture of the frame now and then
+                        frameRequests = ui.ocr != null && !analysing,
+                        onFrame = viewModel::onOcrFrame
                     )
+                    if (analysing) AnalysisCover(ui.analysisFrame)
                 } else {
                     Column(
                         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -122,12 +134,14 @@ fun ReaderScreen(
                 }
             }
             Column(
-                modifier = Modifier.weight(1f).verticalScroll(scroll).padding(12.dp),
+                modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(scroll).padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 val card = ui.card
                 when {
-                    card != null -> CardResult(card, ui, onSend = viewModel::sendToAmazon)
+                    ui.ocr != null -> OcrBanner(ui.ocr!!, onCancel = viewModel::cancelOcr)
+                    ui.unknown != null -> UnknownCardPanel(ui.unknown!!, ui.ocrAvailable, onAdd = viewModel::addUnknown)
+                    card != null -> CardResult(card, ui, onSend = viewModel::sendToAmazon, onOcr = if (ui.ocrAvailable) viewModel::startOcrForShownCard else null)
                     ui.error != null -> ErrorBoxes(ui.error!!)
                     else -> Text(
                         ui.message ?: "Scan a card",
@@ -137,13 +151,6 @@ fun ReaderScreen(
                         modifier = Modifier.padding(vertical = 24.dp)
                     )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    "Corrections stay on this phone. \"Export\" sends them as a file. " + ExportShare.WHERE_TO_SEND,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
             }
             BackButton(
                 onClick = {
@@ -153,6 +160,81 @@ fun ReaderScreen(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
+    }
+    // the overlay that asks for the name of an unknown card set; scans are dropped while it is open
+    ui.askEdition?.let { pending ->
+        EditionDialog(key = pending, onContinue = viewModel::confirmEdition, onCancel = viewModel::cancelEdition)
+    }
+    // the overlay to add an unknown card by hand: the same fields as "Update manually", all empty
+    ui.manualAdd?.let { pending ->
+        WrongDialog(
+            title = "Add manually", key = pending, ourYear = null, ourTitle = "", ourArtist = "", ourAmazonId = null, ourAlbum = null,
+            note = ReaderLogic.UPDATES_NOTE,
+            onSave = viewModel::saveManual, onCancel = viewModel::cancelManual
+        )
+    }
+}
+
+/** An unknown card: the screen says so and offers the two ways to add it. */
+@Composable
+private fun UnknownCardPanel(unknown: UnknownCard, ocrAvailable: Boolean, onAdd: (AddMode) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Unknown card ${unknown.pending.number}", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            unknown.setName,
+            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center
+        )
+        if (!unknown.setKnown) {
+            Text(
+                "This card set is not in the app.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(onClick = { onAdd(AddMode.MANUAL) }, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text("Add manually") }
+        if (ocrAvailable) {
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(onClick = { onAdd(AddMode.OCR) }, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text("Add via OCR") }
+        }
+    }
+}
+
+/** Over the camera window while the analysis runs: the last good picture blurred (where the system can), a dark layer and a spinner. */
+@Composable
+private fun AnalysisCover(frame: android.graphics.Bitmap?) {
+    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF202020)), contentAlignment = Alignment.Center) {
+        if (frame != null) {
+            Image(
+                bitmap = frame.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().blur(24.dp)
+            )
+        }
+        Box(modifier = Modifier.fillMaxSize().background(Color(0x99000000)))
+        CircularProgressIndicator(color = Color.White)
+    }
+}
+
+/** The OCR mode: what the user is to do, and a button to leave it. */
+@Composable
+private fun OcrBanner(ocr: OcrState, onCancel: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Scan song information (OCR)", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(8.dp))
+        val hint = when (ocr.phase) {
+            OcrPhase.WAITING -> "Show the other side of the card."
+            OcrPhase.ANALYSING -> "Analysing the card ..."
+            OcrPhase.FAILED -> "Could not read the card. Try again."
+        }
+        Text(hint, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(4.dp))
+        // the progress: the sharp pictures with the whole card that are collected, then the readings of the analysis
+        val progress = if (ocr.phase == OcrPhase.ANALYSING) "Reading ${ocr.analysed}/${ocr.planned}" else "Photos ${ocr.captured}/${OcrCapture.NEEDED}"
+        Text(progress, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(ReaderLogic.UPDATES_NOTE, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text("Cancel") }
     }
 }
 
@@ -172,14 +254,14 @@ private fun greenColor(): Color = if (isSystemInDarkTheme()) Color(0xFF81C784) e
  * "(card#N)". The box has a thin green border. The set name is a small caption above the box, a card with a correction of this phone says so.
  */
 @Composable
-private fun CardResult(card: ReaderCard, ui: ReaderUiState, onSend: () -> Unit) {
+private fun CardResult(card: ReaderCard, ui: ReaderUiState, onSend: () -> Unit, onOcr: (() -> Unit)? = null) {
     val accent = greenColor()
     val text = MaterialTheme.colorScheme.onSurface
 
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(card.setName, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
         if (card.corrected) {
-            Text("corrected on this phone", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("updated on this phone", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(modifier = Modifier.height(4.dp))
         Card(
@@ -200,7 +282,9 @@ private fun CardResult(card: ReaderCard, ui: ReaderUiState, onSend: () -> Unit) 
         ReportWrongSection(
             ReportCard(card.serial, card.setFile, card.number, card.year, card.title, card.artist, card.amazonId, card.album),
             revealed = true,
-            source = ReportSource.READER
+            source = ReportSource.READER,
+            note = ReaderLogic.UPDATES_NOTE,
+            onOcr = onOcr
         )
         // plays the card through the Amazon Music app, the user stays here and the card stays
         Spacer(modifier = Modifier.height(8.dp))
@@ -212,7 +296,7 @@ private fun CardResult(card: ReaderCard, ui: ReaderUiState, onSend: () -> Unit) 
         ui.amazonProblem?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         }
-        val line = SendToAmazon.statusLine(ui.send, ui.songEnded, ui.versionNote, ui.playStatus)
+        val line = SendToAmazon.statusLine(ui.send, ui.songEnded, ui.playStatus)
         if (line.isNotEmpty()) Text(line, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp))
         if (ui.send == SendStatus.FAILED && ui.sendError != null) {
             Spacer(modifier = Modifier.height(8.dp))

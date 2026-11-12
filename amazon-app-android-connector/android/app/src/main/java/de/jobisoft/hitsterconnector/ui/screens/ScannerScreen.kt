@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -31,6 +32,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import de.jobisoft.hitsterconnector.ui.components.BackButton
 import de.jobisoft.hitsterconnector.ui.components.QRCodeScanner
+import de.jobisoft.hitsterconnector.ui.components.SquareScanWindow
 import de.jobisoft.hitsterconnector.ui.viewmodel.GameViewModel
 import de.jobisoft.hitsterconnector.ui.viewmodel.SendState
 import de.jobisoft.hitsterconnector.util.QRCodeParser
@@ -97,7 +99,7 @@ fun ScannerScreen(
                 )
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    Box(modifier = Modifier.weight(1f)) {
+                    SquareScanWindow(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         if (hasPermission) {
                             QRCodeScanner(
                                 onQRCodeScanned = { qrCode ->

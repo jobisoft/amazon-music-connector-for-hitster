@@ -12,18 +12,12 @@ class ResultTextsTest {
 
     @Test
     fun aKnownCardNamesItsSetOnTheSecondLine() {
-        assertEquals("Displaying card from" to "Hitster Deutschland Rock", displayingLines("Hitster Deutschland Rock", isTestSong = false))
-    }
-
-    @Test
-    fun theFallbackSongIsATestCardOnOneLineWhateverTheSet() {
-        assertEquals("Displaying test card" to null, displayingLines(null, isTestSong = true))
-        assertEquals("Displaying test card" to null, displayingLines("Some set", isTestSong = true))
+        assertEquals("Displaying card from" to "Hitster Deutschland Rock", displayingLines("Hitster Deutschland Rock"))
     }
 
     @Test
     fun withoutASetNameItSaysOnlyDisplayingCard() {
-        val lines = displayingLines(null, isTestSong = false)
+        val lines = displayingLines(null)
         assertEquals("Displaying card", lines.first)
         assertNull(lines.second)
     }
@@ -31,7 +25,7 @@ class ResultTextsTest {
     @Test
     fun theTextsDoNotDependOnThePlayer() {
         // the function has no player argument: pause, stop and the end of the song cannot change the box
-        val all = listOf(displayingLines("Set", false), displayingLines(null, true), displayingLines(null, false))
+        val all = listOf(displayingLines("Set"), displayingLines(null))
         assertTrue(all.all { it.first.startsWith("Displaying") })
     }
 

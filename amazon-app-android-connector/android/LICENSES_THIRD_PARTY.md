@@ -65,6 +65,12 @@ The following libraries are licensed under the Apache License, Version 2.0:
 - License: Apache License 2.0
 - https://github.com/journeyapps/zxing-android-embedded
 
+### Text recognition (every build, except a production app built with --no-ocr)
+- **com.google.mlkit:text-recognition** (16.0.1), reads the text on the back of an unknown card
+- Copyright: Google LLC
+- License: the ML Kit terms of Google (not open source), https://developers.google.com/ml-kit/terms
+- The model is in the app, the text never leaves the phone.
+
 ---
 
 ## BSD-2-Clause License (Simplified BSD License)

@@ -28,9 +28,7 @@ class CSVRepository @Inject constructor(
      */
     suspend fun loadCSV(csvUrlOrName: String): Result<Map<Int, CSVSong>> = withContext(Dispatchers.IO) {
         try {
-            val csvContent = loadCSVContent(csvUrlOrName)
-            val parsed = parseCSV(csvContent)
-            Result.success(withOverrides(csvUrlOrName, parsed.songsByIndex))
+            Result.success(withOverrides(csvUrlOrName, baseSongs(csvUrlOrName)))
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -42,10 +40,24 @@ class CSVRepository @Inject constructor(
      * reveal box and the reader all show the corrected values.
      */
     private fun withOverrides(csvUrlOrName: String, songs: Map<Int, CSVSong>): Map<Int, CSVSong> {
-        val setFile = if (csvUrlOrName.startsWith("http", ignoreCase = true)) csvUrlOrName.substringAfterLast("/") else csvUrlOrName
-        val corrections = overrides.forSet(setFile)
-        if (corrections.isEmpty()) return songs
-        return songs.mapValues { (index, song) -> corrections[index]?.let { CorrectionLogic.apply(song, it) } ?: song }
+        val setFile = setFileOf(csvUrlOrName)
+        return CorrectionLogic.addMissing(songs, overrides.forSet(setFile))
+    }
+
+    private fun setFileOf(csvUrlOrName: String): String =
+        if (csvUrlOrName.startsWith("http", ignoreCase = true)) csvUrlOrName.substringAfterLast("/") else csvUrlOrName
+
+    /**
+     * The cards of the set file. A set whose file is not installed but that has corrections on this phone (a set the user
+     * made by scanning its cards) starts empty, its cards are the corrections.
+     */
+    private fun baseSongs(csvUrlOrName: String): Map<Int, CSVSong> {
+        return try {
+            parseCSV(loadCSVContent(csvUrlOrName)).songsByIndex
+        } catch (e: Exception) {
+            if (overrides.forSet(setFileOf(csvUrlOrName)).isEmpty()) throw e
+            emptyMap()
+        }
     }
 
     /**
@@ -56,9 +68,7 @@ class CSVRepository @Inject constructor(
         index: Int
     ): Result<CSVSong?> = withContext(Dispatchers.IO) {
         try {
-            val csvContent = loadCSVContent(csvUrl)
-            val parsed = parseCSV(csvContent)
-            Result.success(withOverrides(csvUrl, parsed.songsByIndex)[index])
+            Result.success(withOverrides(csvUrl, baseSongs(csvUrl))[index])
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -78,11 +88,14 @@ class CSVRepository @Inject constructor(
             return localFile.readText()
         }
 
-        throw Exception("This card set is not installed. Import its CSV file in Card Config.")
+        throw Exception(NOT_INSTALLED)
     }
 
     // the parsing is pure: it does not use the files of the app
     companion object {
+        /** The text of the error for a set whose file is not on this phone. */
+        const val NOT_INSTALLED = "This card set is not installed. Import its CSV file in Card Config."
+
         /** The text of the error for a file without our columns. */
         const val MISSING_COLUMNS = "This CSV file needs the columns Card#, Title, Artist and Year."
 

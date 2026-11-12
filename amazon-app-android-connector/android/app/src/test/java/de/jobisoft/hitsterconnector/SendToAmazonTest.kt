@@ -44,15 +44,6 @@ class SendToAmazonTest {
     }
 
     @Test
-    fun versionNoteIsAddedWhilePlaying() {
-        val line = de.jobisoft.hitsterconnector.reader.SendToAmazon.statusLine(
-            de.jobisoft.hitsterconnector.reader.SendStatus.PLAYING, false, "Amazon played a different version: X (Remix)"
-        )
-        org.junit.Assert.assertTrue(line.startsWith("Playing"))
-        org.junit.Assert.assertTrue(line.endsWith("X (Remix)"))
-    }
-
-    @Test
     fun aScanStopsOnlyASongThatTheButtonStarted() {
         val r = de.jobisoft.hitsterconnector.reader.SendToAmazon
         val st = de.jobisoft.hitsterconnector.reader.SendStatus.entries.associateBy { it.name }

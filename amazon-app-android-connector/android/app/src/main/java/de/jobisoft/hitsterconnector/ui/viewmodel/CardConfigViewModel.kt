@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.jobisoft.hitsterconnector.data.local.CSVFileManager
+import de.jobisoft.hitsterconnector.data.local.CardOverrides
 import de.jobisoft.hitsterconnector.data.repository.CSVRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +20,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CardConfigViewModel @Inject constructor(
-    private val csvFileManager: CSVFileManager
+    private val csvFileManager: CSVFileManager,
+    private val overrides: CardOverrides
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(CardConfigUiState())
@@ -33,7 +35,8 @@ class CardConfigViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val files = csvFileManager.getAllLocalFiles()
-                val fileNames = files.map { it.name }.toList()
+                // the sets with a file, and the sets that only exist as corrections (cards read by the reader): they can be removed too
+                val fileNames = (files.map { it.name } + overrides.sets()).distinct()
                 _uiState.value = _uiState.value.copy(csvFiles = fileNames)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = "Error loading CSV files: ${e.message}")
@@ -78,7 +81,14 @@ class CardConfigViewModel @Inject constructor(
     fun removeCSV(fileName: String) {
         viewModelScope.launch {
             try {
-                val result = csvFileManager.delete(fileName)
+                val hadFile = csvFileManager.exists(fileName)
+                val result = if (hadFile) csvFileManager.delete(fileName) else Result.success(Unit)
+                // the corrections of the set go with it (otherwise the set stays alive through them)
+                val removed = overrides.removeSet(fileName)
+                if (!hadFile && removed == 0) {
+                    _uiState.value = _uiState.value.copy(error = "Error removing file: File not found or could not be deleted")
+                    return@launch
+                }
                 result.fold(
                     onSuccess = { loadCSVFiles() },
                     onFailure = { exception ->

@@ -48,6 +48,8 @@ class Handler(BaseHTTPRequestHandler):
         self._send(404, "{}")
 
     def do_POST(self):
+        if self.path.startswith("/image"):
+            return self._image()
         if self.path != "/log":
             return self._send(404, "{}")
         size = int(self.headers.get("Content-Length") or 0)
@@ -68,6 +70,21 @@ class Handler(BaseHTTPRequestHandler):
                 line = json.dumps(item, ensure_ascii=False)
                 f.write(line + "\n")
                 print(line, flush=True)
+        self._send(200, '{"ok": true}')
+
+
+    def _image(self):
+        """A picture of the app (for example the frame that the OCR reads): POST /image?name=<name>, the body is a JPEG or PNG."""
+        size = int(self.headers.get("Content-Length") or 0)
+        if size <= 0 or size > 5_000_000:
+            return self._send(413, "{}")
+        name = "".join(c for c in (self.path.split("name=", 1)[1] if "name=" in self.path else "image") if c.isalnum() or c in "-_.")[:60] or "image"
+        folder = os.path.join(HERE, "debug_images")
+        os.makedirs(folder, exist_ok=True)
+        path = os.path.join(folder, time.strftime("%H%M%S") + "-" + name)
+        with open(path, "wb") as f:
+            f.write(self.rfile.read(size))
+        print(json.dumps({"tag": "image", "msg": "saved", "data": {"file": os.path.basename(path), "bytes": size}}), flush=True)
         self._send(200, '{"ok": true}')
 
 

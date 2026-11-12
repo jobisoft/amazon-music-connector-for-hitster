@@ -44,7 +44,6 @@ import de.jobisoft.hitsterconnector.util.SearchQuery
 import de.jobisoft.hitsterconnector.util.StateNames
 import de.jobisoft.hitsterconnector.util.StopConfirm
 import de.jobisoft.hitsterconnector.util.TitleMatch
-import de.jobisoft.hitsterconnector.util.VersionCheck
 import de.jobisoft.hitsterconnector.util.StreamGuard
 import de.jobisoft.hitsterconnector.util.VolumeDuck
 import de.jobisoft.hitsterconnector.data.media.AmazonMusicListener
@@ -186,13 +185,11 @@ class ConnectorRepository @Inject constructor(
     }
 
     /**
-     * [versionNote] is set if Amazon played another version than the card (remix, live ...), shown as a small line.
      * [via] is the step that made the song play, [shownMediaId] the id the session of Amazon Music shows.
      */
     data class PlayAnswer(
         val ok: Boolean,
         val message: String?,
-        val versionNote: String? = null,
         val via: String? = null,
         val shownMediaId: String? = null
     )
@@ -347,9 +344,6 @@ class ConnectorRepository @Inject constructor(
     private val _playStatus = MutableStateFlow<String?>(null)
     val playStatus: StateFlow<String?> = _playStatus.asStateFlow()
 
-    /** The version note of the current request, null if the version looks right. */
-    @Volatile
-    private var versionNote: String? = null
 
     @Volatile
     private var queueLogged = false
@@ -556,7 +550,7 @@ class ConnectorRepository @Inject constructor(
     private var staleId: String? = null
 
     /** The debug record of what Amazon loaded, and once per request its queue. Never throws. */
-    private fun logSearchResult(title: String, artist: String, controller: MediaController, suspicious: Boolean) {
+    private fun logSearchResult(title: String, artist: String, controller: MediaController) {
         try {
             val m = controller.metadata
             val shown = m?.getString(MediaMetadata.METADATA_KEY_TITLE)
@@ -566,7 +560,6 @@ class ConnectorRepository @Inject constructor(
                     "shownTitle" to shown, "shownArtist" to m?.getString(MediaMetadata.METADATA_KEY_ARTIST),
                     "mediaId" to m?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID),
                     "durationMs" to m?.getLong(MediaMetadata.METADATA_KEY_DURATION),
-                    "suspicious" to suspicious, "markers" to VersionCheck.found(title, shown),
                     "viaId" to byId)
             )
             if (!queueLogged) {
@@ -650,7 +643,6 @@ class ConnectorRepository @Inject constructor(
         titleLoaded = false
         staleId = null
         queueLogged = false
-        versionNote = null
         byId = false
         val stepsRun = mutableListOf<String>()
         val sessionAtStart = amazonController()
@@ -708,9 +700,7 @@ class ConnectorRepository @Inject constructor(
                     classify = { s, _ -> PlayFlow.classify(s.mediaId, id) },
                     onOurs = { s, controller, ms ->
                         titleLoaded = true
-                        val suspicious = VersionCheck.suspicious(title, s.title)
-                        logSearchResult(title, artist, controller, suspicious)
-                        versionNote = if (suspicious) "Amazon played a different version: ${s.title}" else null
+                        logSearchResult(title, artist, controller)
                         DebugLog.log("play", "id loaded", mapOf("amazonId" to id, "ms" to ms, "shownTitle" to s.title))
                         enterPhase(PlayFlow.Phase.START)
                     },
@@ -803,10 +793,8 @@ class ConnectorRepository @Inject constructor(
                     },
                     onOurs = { s, controller, _ ->
                         titleLoaded = true
-                        val suspicious = VersionCheck.suspicious(title, s.title)
-                        logSearchResult(title, artist, controller, suspicious)
-                        versionNote = if (suspicious) "Amazon played a different version: ${s.title}" else null
-                        DebugLog.log("search", "final", mapOf("wantedTitle" to title, "finalShown" to s.title, "note" to versionNote))
+                        logSearchResult(title, artist, controller)
+                        DebugLog.log("search", "final", mapOf("wantedTitle" to title, "finalShown" to s.title))
                     },
                     onOursState = {},
                     onPlaySent = { VolumeDuck.restore(context, "play sent") }
@@ -907,7 +895,7 @@ class ConnectorRepository @Inject constructor(
                 "positionSeconds" to positionOf(amazonController()?.playbackState)
             )
         )
-        Result.success(PlayAnswer(true, null, versionNote, winner, shown?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID)))
+        Result.success(PlayAnswer(true, null, winner, shown?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID)))
     }
 
     /**

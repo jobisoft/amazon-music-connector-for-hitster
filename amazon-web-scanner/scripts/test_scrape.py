@@ -53,7 +53,7 @@ TRACK_META = {
     "B0TRACK002": {"title": "Machinehead", "artist": "Bush", "album": "Sixteen Stone", "dur": "4 Min. 16 Sek.", "date": "01. Nov. 1994"},
     "B0TRACK005": {"title": "Machinehead (Remastered 2012)", "artist": "Bush", "album": "Loaded: The Greatest Hits [Explicit]",
                    "dur": "4 Min. 17 Sek.", "date": "10. Nov. 2023"},
-    "B0TRACK003": {"title": "Machinehead (Live)", "artist": "Bush", "album": "Live", "dur": "4 Min. 40 Sek.", "date": "5. Mai 2001"},
+    "B0TRACK003": {"title": "Machinehead (Live)", "artist": "Bush", "album": "Live", "dur": "4 Min. 40 Sek.", "date": "5. Mai 2001", "explicit": True},
     "B0TRACK007": {"title": "Machinehead", "artist": "Lullaby Baby", "album": "Baby Hits", "dur": "2 Min. 0 Sek.", "date": None},  # no date
     # the real pages: no date at all, and a page title that is longer than the title in the text
     "B0METANOD1": {"title": "Machinehead (Live From KROQ's Almost Acoustic Christmas, Los Angeles/1995)", "artist": "Bush", "album": "Zen X Four",
@@ -265,7 +265,7 @@ class FakeHost:
             if m:
                 if "text" in m:
                     return 200, {"ok": True, "data": m["text"]}
-                parts = ["Song", m["title"], m["artist"]] + ([m["dur"]] if m["dur"] else [])
+                parts = ["Song", m["title"]] + (["E"] if m.get("explicit") else []) + [m["artist"]] + ([m["dur"]] if m["dur"] else [])
                 parts += ["•", m["date"]] if m["date"] else ["HD", "Spielen"]
                 return 200, {"ok": True, "data": " | ".join(parts)}
             return 200, {"ok": True, "data": "Lied 4 Min. 16 Sek. und mehr"}
@@ -1401,11 +1401,25 @@ class MetaJob(Base):
         for hit in (h[0], h[2]):
             self.assertIsNone(hit["album_id"])
             self.assertIsNone(hit["album_tracks"])
+        self.assertIs(h[0]["explicit"], False)  # no E next to the title
+        self.assertIs(h[2]["explicit"], True)  # the E of an explicit song
+        self.assertNotIn("explicit", h[1])
         self.assertNotIn("meta_title", h[1])  # a hit that was not named is untouched
         self.assertIsNone(h[1]["album_year"])
         self.assertNotIn("errors", self.records()[6]["track_search"])
         res = self.results()[0]
         self.assertEqual((res["status"], res["metas"], res["message"]), ("ok", [1, 3], "2 of 2 read"))
+
+    def test_parse_explicit_reads_the_e_next_to_the_title(self):
+        e = W.parse_explicit
+        self.assertTrue(e("Startseite\nSong\nI Love It (Explicit)\nE\nIcona Pop\n[feat.\nCharli xcx\n]\n2 Min. 37 Sek."))
+        self.assertTrue(e("Song | Machinehead | E | Bush | 4 Min. 40 Sek."))
+        self.assertFalse(e("Startseite\nSong\nRehab\nAmy Winehouse\n3 Min. 34 Sek.\n•\n07. Nov. 2006"))
+        self.assertFalse(e("Song\nAlbum [Explicit]\nArtist\n3 Min."))  # the word in a name is no E
+        self.assertFalse(e("Song\nTitle\nArtist\n3 Min. 3 Sek." + "\n" * 500 + "E\nlater in the page"))  # only the head is looked at
+        self.assertFalse(e("Song\nBEE\nArtist"))
+        self.assertIsNone(e(""))
+        self.assertIsNone(e(None))
 
     def test_range_and_tracks(self):
         rc, _o, err = self.meta(hits=["2-3"])

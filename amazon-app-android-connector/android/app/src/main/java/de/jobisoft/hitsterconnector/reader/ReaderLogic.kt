@@ -57,6 +57,9 @@ data class Counters(val updated: Int)
 
 /** The logic of the reader mode without Android: CSV lines, the year check, the counters. */
 object ReaderLogic {
+    /** Said in the reader where the user changes a card: in the overlays "Update manually" and "Add manually" and in the OCR mode. */
+    const val UPDATES_NOTE = "Updates stay on this phone. \"Export\" sends them as a file."
+
     const val RESULT_HEADER = "time,set,card,verdict,ourYear,ourTitle,ourArtist,cardYear,cardTitle,cardArtist,source,ourAmazonId,cardAmazonId,ourAlbum,cardAlbum"
 
     fun key(file: String, card: Int) = "$file#$card"

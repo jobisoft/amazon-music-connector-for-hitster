@@ -116,11 +116,10 @@ internal fun HideStatusBar(songOnScreen: Boolean) {
 
 /**
  * The two lines of the green box: our text, then the card set. It shows which card is on the screen
- * and has nothing to do with the player (pause, stop, the end of the song). The fallback song says
- * "test card" (one line), without a known set there is only "Displaying card".
+ * and has nothing to do with the player (pause, stop, the end of the song). Without a known set
+ * there is only "Displaying card".
  */
-internal fun displayingLines(setName: String?, isTestSong: Boolean): Pair<String, String?> = when {
-    isTestSong -> "Displaying test card" to null
+internal fun displayingLines(setName: String?): Pair<String, String?> = when {
     setName != null -> "Displaying card from" to setName
     else -> "Displaying card" to null
 }
@@ -169,6 +168,27 @@ internal fun ResultView(
                 }
             }
 
+            // same look as SENDING: a centered column, nothing is sent to Amazon Music
+            SendState.UNKNOWN -> {
+                val unknown = state.unknown
+                Text(
+                    unknown?.title ?: "Unknown card",
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center
+                )
+                unknown?.lines?.forEach { line ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        line,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+                OutlinedButton(onClick = onCancel) { Text("Cancel") }
+            }
+
             SendState.SUCCESS -> {
                 if (state.info != null) {
                     Text(
@@ -179,22 +199,8 @@ internal fun ResultView(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
-                if (state.versionNote != null) {
-                    Text(
-                        state.versionNote,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-                // The error stays visible, even though a test song plays in its place
-                if (state.warning != null) {
-                    ErrorBoxes(state.warning)
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
                 // always there while a card is on the result screen: pause, stop and the end of the song do not touch it
-                val (displayingText, displayingSet) = displayingLines(state.setName, state.isTestSong)
+                val (displayingText, displayingSet) = displayingLines(state.setName)
                 StatusCard(title = displayingText, subtitle = displayingSet, isError = false)
                 Spacer(modifier = Modifier.height(20.dp))
                 PlayerControls(
@@ -222,9 +228,8 @@ internal fun ResultView(
                 if (state.song != null) {
                     Spacer(modifier = Modifier.height(20.dp))
                     RevealBox(song = state.song, revealed = state.revealed, onToggle = onToggleReveal)
-                    // not for the test song of an unknown card
                     val ref = state.cardRef
-                    if (ref != null && !state.isTestSong) {
+                    if (ref != null) {
                         ReportWrongSection(
                             ReportCard(state.cardSerial, ref.setFile, ref.number, state.song.year, state.song.title, state.song.artist, state.song.amazonId, state.song.album),
                             state.revealed, reportSource

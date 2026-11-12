@@ -33,8 +33,36 @@ class CardOverrides @Inject constructor(
     fun forSet(setFile: String): Map<Int, CardOverride> =
         rows.values.filter { it.setFile == setFile }.associateBy { it.card }
 
+    /** The name of a set that is known from corrections: the first non-empty edition of its rows, null for none. */
+    @Synchronized
+    fun editionOf(setFile: String): String? =
+        rows.values.firstOrNull { it.setFile == setFile && !it.edition.isNullOrBlank() }?.edition
+
+    /** The set files that have corrections, in the order they were first corrected. */
+    @Synchronized
+    fun sets(): List<String> = rows.values.map { it.setFile }.distinct()
+
     @Synchronized
     fun all(): List<CardOverride> = rows.values.toList()
+
+    /**
+     * The card set was deleted: its corrections go with it, in memory and in the file. Returns how many were removed. The file
+     * is rewritten with the latest correction per card of the other sets.
+     */
+    @Synchronized
+    fun removeSet(setFile: String): Int {
+        val keep = CorrectionLogic.withoutSet(rows.values, setFile)
+        val removed = rows.size - keep.size
+        if (removed == 0) return 0
+        rows.clear()
+        for (row in keep) rows[row.key] = row
+        try {
+            file.writeText(CorrectionLogic.HEADER + "\n" + keep.joinToString("") { CorrectionLogic.line(it) + "\n" })
+        } catch (_: Exception) {
+            // gone from memory for this run, the file is rewritten at the next change
+        }
+        return removed
+    }
 
     /** Saves a correction: appended to the file, and in memory at once. */
     @Synchronized

@@ -16,8 +16,6 @@ import java.util.Locale
  * read permission for this one file). No server, the user sends the file.
  */
 object ExportShare {
-    /** Where to send it, one short line for the screen. */
-    const val WHERE_TO_SEND = "Send the file to the author: GitHub project jobisoft/amazon-music-connector-for-hitster (open an issue and attach the file)."
 
     /** Builds the file and opens the share sheet. False if there is nothing to export or sharing fails. */
     fun share(context: Context, corrections: List<CardOverride>): Boolean {
@@ -34,7 +32,7 @@ object ExportShare {
                 putExtra(Intent.EXTRA_SUBJECT, file.name)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(send, "Send corrections").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            context.startActivity(Intent.createChooser(send, "Send updates").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             true
         } catch (_: Exception) {
             false

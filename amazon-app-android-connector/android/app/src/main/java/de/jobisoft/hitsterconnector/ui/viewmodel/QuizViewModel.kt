@@ -164,8 +164,6 @@ class QuizViewModel @Inject constructor(
         send(
             SongMapping(url = card.setFile + "#" + song.index, title = song.title, artist = song.artist, year = song.year, amazonId = song.amazonId, album = song.album),
             setName = cardSetNames.displayName(card.setFile),
-            isTestSong = false,
-            warning = null,
             info = if (draw.reshuffled) DECK_USED_UP else null,
             cardRef = CardRef(card.setFile, song.index)
         )

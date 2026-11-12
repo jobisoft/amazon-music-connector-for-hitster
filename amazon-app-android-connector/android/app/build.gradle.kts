@@ -7,12 +7,23 @@ plugins {
     alias(libs.plugins.kotlin.kapt)
 }
 
+// OCR for unknown cards in the reader: Google ML Kit text recognition (the model is in the app). Every build has it. The build flag `ocr`
+// can switch it off for the production build: -Pocr=false (build.sh --prod --no-ocr), then the production app is small and the reader
+// mode keeps its old behavior. The real reader is in src/ocr, the stand-in without a reader in src/noocr.
+val ocrInProd = (project.findProperty("ocr") as String?) != "false"
+
 android {
     // The card sets are in the folder assets/card-data at the top. The folder assets is added to the assets of
     // the app, nothing is copied. The research data in assets/amazon-data is not part of the app.
     sourceSets {
         getByName("main") {
             assets.srcDir(rootProject.projectDir.resolve("../../assets"))
+        }
+        getByName("debug") {
+            java.srcDir("src/ocr/java")
+        }
+        getByName("release") {
+            java.srcDir(if (ocrInProd) "src/ocr/java" else "src/noocr/java")
         }
     }
     androidResources {
@@ -37,7 +48,12 @@ android {
         // version code that only grows, so that Android accepts it as an update.
         // Without it (Android Studio) the app is a "dev" build.
         versionCode = (project.findProperty("buildVersionCode") as String?)?.toInt() ?: 1
-        versionName = "1.0.1-" + ((project.findProperty("buildStamp") as String?) ?: "dev")
+        versionName = "1.1.0-" + ((project.findProperty("buildStamp") as String?) ?: "dev")
+        // only 64-bit ARM (every phone of the last years): the native library of ML Kit is 10 MB per processor type, the app is much
+        // smaller without the others. Not for an emulator with x86 and not for an old 32-bit phone.
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     packaging {
@@ -65,6 +81,7 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             buildConfigField("boolean", "DEBUG_CHANNEL", "true")
+            buildConfigField("boolean", "OCR_ENABLED", "true")
         }
         getByName("release") {
             // "production": small, no debug channel
@@ -77,6 +94,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             versionNameSuffix = "-prod"
             buildConfigField("boolean", "DEBUG_CHANNEL", "false")
+            buildConfigField("boolean", "OCR_ENABLED", ocrInProd.toString())
         }
     }
     compileOptions {
@@ -196,6 +214,10 @@ dependencies {
         exclude(group = "com.google.mlkit", module = "barcode-scanning-common")
     }
     
+    // OCR for unknown cards (Google ML Kit text recognition): always in debug, in production unless -Pocr=false
+    debugImplementation("com.google.mlkit:text-recognition:16.0.1")
+    if (ocrInProd) releaseImplementation("com.google.mlkit:text-recognition:16.0.1")
+
     // Markdown parsing
     implementation(libs.commonmark)
 

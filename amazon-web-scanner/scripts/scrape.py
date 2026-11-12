@@ -124,6 +124,8 @@ def meta_at(cl, card, records, path, hits, stopper):
                     hit["meta_title"] = meta["meta_title"]
                 if meta["album_release_date"] is not None:
                     hit["album_release_date"], hit["album_year"] = meta["album_release_date"], meta["album_year"]
+                if meta["explicit"] is not None:
+                    hit["explicit"] = meta["explicit"]
                 if meta["duration"] is not None and hit.get("duration") is None:
                     hit["duration"] = meta["duration"]
                 if meta["missing"]:

@@ -52,8 +52,10 @@ import de.jobisoft.hitsterconnector.util.AmazonId
  */
 @Composable
 fun WrongDialog(
+    title: String = "Update manually",
     key: Any, ourYear: Int?, ourTitle: String, ourArtist: String, ourAmazonId: String?,
     ourAlbum: String? = null,
+    note: String? = null,
     onSave: (Edit) -> Unit, onCancel: () -> Unit
 ) {
     var artist by remember(key) { mutableStateOf(ourArtist) }
@@ -76,7 +78,7 @@ fun WrongDialog(
             modifier = Modifier.fillMaxWidth().padding(16.dp).imePadding()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Report as wrong", style = MaterialTheme.typography.titleLarge)
+                Text(title, style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(8.dp))
                 Column(modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                     OutlinedTextField(
@@ -127,6 +129,10 @@ fun WrongDialog(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
                         modifier = Modifier.fillMaxWidth()
                     )
+                }
+                if (note != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
