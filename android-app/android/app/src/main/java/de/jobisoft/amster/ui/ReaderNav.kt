@@ -9,5 +9,10 @@ import de.jobisoft.amster.reader.ReaderScreen
 const val READER_ROUTE = "reader"
 
 fun NavGraphBuilder.readerRoute(navController: NavHostController) {
-    composable(READER_ROUTE) { ReaderScreen(onNavigateBack = { navController.popBackStack() }) }
+    composable(READER_ROUTE) {
+        ReaderScreen(
+            onNavigateBack = { navController.popBackStack() },
+            onReadOcr = { navController.navigate(Screen.Ocr.route) }
+        )
+    }
 }

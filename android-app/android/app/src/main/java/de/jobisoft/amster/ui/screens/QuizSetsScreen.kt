@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import de.jobisoft.amster.ui.components.ScreenScaffold
+import de.jobisoft.amster.ui.viewmodel.QuizSetsState
 import de.jobisoft.amster.ui.viewmodel.QuizSetsViewModel
 import de.jobisoft.amster.ui.viewmodel.QuizViewModel
 
@@ -52,42 +53,58 @@ fun QuizSetsScreen(
     val state by viewModel.state.collectAsState()
 
     ScreenScaffold(title = "Quiz Mode") {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        QuizSetsContent(
+            state = state,
+            onToggleAll = viewModel::toggleAll,
+            onToggle = viewModel::toggle,
+            onStart = onStart
+        )
+    }
+}
+
+/** The body of the screen, stateless: the text, the list of sets and "Start". */
+@Composable
+internal fun QuizSetsContent(
+    state: QuizSetsState,
+    onToggleAll: () -> Unit,
+    onToggle: (String) -> Unit,
+    onStart: (List<String>) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            "Pick the card sets for the quiz.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        GlassCardFull(
+            modifier = Modifier.weight(1f, fill = false),
+            contentPadding = PaddingValues(vertical = 4.dp)
         ) {
-            Text(
-                "Pick the card sets for the quiz.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            GlassCardFull(
-                modifier = Modifier.weight(1f, fill = false),
-                contentPadding = PaddingValues(vertical = 4.dp)
-            ) {
-                LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                    item {
-                        SetRow(label = "All sets", checked = state.allSelected, onToggle = viewModel::toggleAll, bold = true)
-                    }
-                    items(state.sets, key = { it.file }) { set ->
-                        HorizontalDivider(color = AmsterTheme.extras.glassBorder)
-                        SetRow(label = set.name, checked = set.file in state.selected, onToggle = { viewModel.toggle(set.file) })
-                    }
+            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                item {
+                    SetRow(label = "All sets", checked = state.allSelected, onToggle = onToggleAll, bold = true)
+                }
+                items(state.sets, key = { it.file }) { set ->
+                    HorizontalDivider(color = AmsterTheme.extras.glassBorder)
+                    SetRow(label = set.name, checked = set.file in state.selected, onToggle = { onToggle(set.file) })
                 }
             }
-            PrimaryButton(
-                text = "Start",
-                onClick = {
-                    onStart(if (state.allSelected) listOf(QuizViewModel.ALL) else state.sets.map { it.file }.filter { it in state.selected })
-                },
-                enabled = state.selected.isNotEmpty(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            )
         }
+        PrimaryButton(
+            text = "Start",
+            onClick = {
+                onStart(if (state.allSelected) listOf(QuizViewModel.ALL) else state.sets.map { it.file }.filter { it in state.selected })
+            },
+            enabled = state.selected.isNotEmpty(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        )
     }
 }
 

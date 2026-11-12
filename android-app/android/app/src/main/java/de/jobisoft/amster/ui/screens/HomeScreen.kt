@@ -1,9 +1,6 @@
 package de.jobisoft.amster.ui.screens
 
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.BoxWithConstraints
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -28,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Info
@@ -84,6 +82,8 @@ fun HomeScreen(
     onNavigateToHelp: () -> Unit,
     onNavigateToLicenses: () -> Unit,
     onNavigateToAbout: () -> Unit,
+    /** The screens gallery, only in the debug build (null elsewhere): it adds a tile. */
+    onNavigateToGallery: (() -> Unit)? = null,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -116,12 +116,44 @@ fun HomeScreen(
     val onExport = {
         val corrections = viewModel.corrections()
         if (corrections.isEmpty()) {
-            Toast.makeText(appContext, "Nothing to export yet. Use \"Update manually\" on a card first.", Toast.LENGTH_LONG).show()
+            Toast.makeText(appContext, "Nothing to export yet. Use \"Edit Card\" on a card first.", Toast.LENGTH_LONG).show()
         } else if (!ExportShare.share(appContext, corrections)) {
             Toast.makeText(appContext, "The export did not work.", Toast.LENGTH_LONG).show()
         }
     }
 
+    HomeContent(
+        state = state,
+        exportCount = exportCount,
+        onNavigateToCardConfig = onNavigateToCardConfig,
+        onNavigateToScanner = onNavigateToScanner,
+        onNavigateToQuiz = onNavigateToQuiz,
+        onNavigateToReader = onNavigateToReader,
+        onNavigateToOptions = onNavigateToOptions,
+        onNavigateToHelp = onNavigateToHelp,
+        onNavigateToLicenses = onNavigateToLicenses,
+        onNavigateToAbout = onNavigateToAbout,
+        onNavigateToGallery = onNavigateToGallery,
+        onExport = onExport
+    )
+}
+
+/** The main screen, stateless: the setup card, the three modes and the small tiles. */
+@Composable
+internal fun HomeContent(
+    state: SetupState,
+    exportCount: Int,
+    onNavigateToCardConfig: () -> Unit,
+    onNavigateToScanner: () -> Unit,
+    onNavigateToQuiz: () -> Unit,
+    onNavigateToReader: () -> Unit,
+    onNavigateToOptions: () -> Unit,
+    onNavigateToHelp: () -> Unit,
+    onNavigateToLicenses: () -> Unit,
+    onNavigateToAbout: () -> Unit,
+    onNavigateToGallery: (() -> Unit)?,
+    onExport: () -> Unit
+) {
     val modes: List<Triple<String, ImageVector, Pair<Boolean, () -> Unit>>> = listOf(
         // the three modes, one composable: the same card, size, style and spacing, in this order
         Triple("Play Mode", Icons.Filled.QrCodeScanner, state.ready to onNavigateToScanner),
@@ -137,77 +169,46 @@ fun HomeScreen(
         Triple("Help", Icons.AutoMirrored.Filled.HelpOutline, onNavigateToHelp),
         Triple("Open Source Licenses", Icons.Filled.Description, onNavigateToLicenses),
         Triple("About", Icons.Filled.Info, onNavigateToAbout)
-    )
+    ) + listOfNotNull(onNavigateToGallery?.let { Triple("Screens (debug)", Icons.Filled.Dashboard, it) })
 
-    ScreenScaffold(title = null, contentMaxWidth = Dimens.WideMaxWidth) {
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val wide = maxWidth >= Dimens.WideBreakpoint
-            val header: @Composable ColumnScope.() -> Unit = {
-                Text(
-                    text = androidx.compose.ui.res.stringResource(de.jobisoft.amster.R.string.app_name),
-                    style = MaterialTheme.typography.displayMedium.merge(TextStyle(brush = AmsterTheme.extras.accentBrush)),
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = "Scan a Hitster card and play the song in the Amazon Music app on this phone",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-                SetupCard(state)
+    ScreenScaffold(title = null) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(Dimens.Space16),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Dimens.Space16)
+        ) {
+            Spacer(modifier = Modifier.height(Dimens.Space24))
+            Text(
+                text = androidx.compose.ui.res.stringResource(de.jobisoft.amster.R.string.app_name),
+                style = MaterialTheme.typography.displayMedium.merge(TextStyle(brush = AmsterTheme.extras.accentBrush)),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "Scan a Hitster card and play the song in the Amazon Music app on this phone",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            SetupCard(state)
+            for ((label, icon, enabledAndAction) in modes) {
+                ModeCard(label, icon, enabled = enabledAndAction.first, onClick = enabledAndAction.second)
             }
-            val entries: @Composable ColumnScope.() -> Unit = {
-                for ((label, icon, enabledAndAction) in modes) {
-                    ModeCard(label, icon, enabled = enabledAndAction.first, onClick = enabledAndAction.second)
-                }
-                Spacer(modifier = Modifier.height(Dimens.Space8))
-                for (pair in secondary.chunked(2)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Dimens.Space12)
-                    ) {
-                        for ((label, icon, action) in pair) {
-                            SmallTile(label, icon, action, Modifier.weight(1f))
-                        }
-                        if (pair.size == 1) Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-            }
-            if (wide) {
-                // a tablet or a phone in landscape: the title and the setup on the left, the entries on the right
+            Spacer(modifier = Modifier.height(Dimens.Space8))
+            for (pair in secondary.chunked(2)) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(Dimens.Space16),
-                    horizontalArrangement = Arrangement.spacedBy(Dimens.Space24)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.Space12)
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(Dimens.Space16),
-                        content = header
-                    )
-                    Column(
-                        modifier = Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(Dimens.Space16),
-                        content = entries
-                    )
-                }
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .padding(Dimens.Space16),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(Dimens.Space16)
-                ) {
-                    Spacer(modifier = Modifier.height(Dimens.Space24))
-                    header()
-                    entries()
-                    Spacer(modifier = Modifier.height(Dimens.Space16))
+                    for ((label, icon, action) in pair) {
+                        SmallTile(label, icon, action, Modifier.weight(1f))
+                    }
+                    if (pair.size == 1) Spacer(modifier = Modifier.weight(1f))
                 }
             }
+            Spacer(modifier = Modifier.height(Dimens.Space16))
         }
     }
 }
@@ -265,7 +266,7 @@ private fun SetupCard(state: SetupState) {
 
 /** The stack trace of the last crash, with "Copy", "Share" and "Close" (closing deletes it). */
 @Composable
-private fun CrashDialog(text: String, onClose: () -> Unit) {
+internal fun CrashDialog(text: String, onClose: () -> Unit) {
     val context = LocalContext.current
     AlertDialog(
         onDismissRequest = { /* only "Close" removes it: the text should not be lost by a stray tap */ },

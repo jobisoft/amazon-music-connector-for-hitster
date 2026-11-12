@@ -3,6 +3,7 @@ package de.jobisoft.amster.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -23,13 +24,16 @@ import de.jobisoft.amster.ui.theme.GlassShape
 
 /**
  * A translucent card: a light fill over the gradient, a faint sheen from top to bottom and a hairline border.
- * [tint] and [borderColor] give it a meaning (success, error). With [onClick] the whole card is a button.
+ * [tint] and [borderColor] give it a meaning (success, error). With [onClick] the whole card is a button, with [onLongClick] as well
+ * it also reacts to a long press.
  */
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     onClickLabel: String? = null,
+    onLongClick: (() -> Unit)? = null,
+    onLongClickLabel: String? = null,
     tint: Color? = null,
     borderColor: Color? = null,
     contentPadding: PaddingValues = PaddingValues(Dimens.Space16),
@@ -44,7 +48,17 @@ fun GlassCard(
         .background(tint ?: extras.glassFill)
         .background(sheen)
         .border(1.dp, borderColor ?: extras.glassBorder, GlassShape)
-    if (onClick != null) card = card.clickable(onClickLabel = onClickLabel, role = Role.Button, onClick = onClick)
+    if (onLongClick != null) {
+        card = card.combinedClickable(
+            onClickLabel = onClickLabel,
+            onLongClickLabel = onLongClickLabel,
+            role = Role.Button,
+            onLongClick = onLongClick,
+            onClick = onClick ?: {}
+        )
+    } else if (onClick != null) {
+        card = card.clickable(onClickLabel = onClickLabel, role = Role.Button, onClick = onClick)
+    }
     Column(
         modifier = card.padding(contentPadding),
         verticalArrangement = verticalArrangement,
@@ -59,6 +73,8 @@ fun GlassCardFull(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     onClickLabel: String? = null,
+    onLongClick: (() -> Unit)? = null,
+    onLongClickLabel: String? = null,
     tint: Color? = null,
     borderColor: Color? = null,
     contentPadding: PaddingValues = PaddingValues(Dimens.Space16),
@@ -69,6 +85,8 @@ fun GlassCardFull(
     modifier = modifier.fillMaxWidth(),
     onClick = onClick,
     onClickLabel = onClickLabel,
+    onLongClick = onLongClick,
+    onLongClickLabel = onLongClickLabel,
     tint = tint,
     borderColor = borderColor,
     contentPadding = contentPadding,

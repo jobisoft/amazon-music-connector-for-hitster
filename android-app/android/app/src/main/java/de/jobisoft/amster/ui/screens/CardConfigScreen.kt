@@ -26,6 +26,7 @@ import androidx.core.net.toUri
 import android.content.Intent
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import de.jobisoft.amster.ui.viewmodel.CardConfigUiState
 import de.jobisoft.amster.ui.viewmodel.CardConfigViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,104 +47,122 @@ fun CardConfigScreen(
     }
     
     ScreenScaffold(title = "Card Config") {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        CardConfigContent(
+            uiState = uiState,
+            onImport = {
+                // Wildcard MIME type: CSV files come with many types from many sources
+                filePickerLauncher.launch("*/*")
+            },
+            onCheckOnline = {
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, "https://github.com/jobisoft/amster".toUri())
+                )
+            },
+            onPreview = onNavigateToPreview,
+            onDelete = { viewModel.removeCSV(it) }
+        )
+    }
+}
+
+/** The body of the screen, stateless: the intro, the buttons, the messages and the list of files. */
+@Composable
+internal fun CardConfigContent(
+    uiState: CardConfigUiState,
+    onImport: () -> Unit,
+    onCheckOnline: () -> Unit,
+    onPreview: (String) -> Unit,
+    onDelete: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = "A card set tells Amster which song belongs to which card number. The sets that come with the app are " +
+                "listed below. You can add more as CSV files with the Card#, Title, Artist and Year columns, " +
+                "or check our GitHub Repository for available set files.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "A card set tells Amster which song belongs to which card number. The sets that come with the app are " +
-                    "listed below. You can add more as CSV files with the Card#, Title, Artist and Year columns, " +
-                    "or check our GitHub Repository for available set files.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (uiState.isAddingFile) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                }
-                SecondaryButton(
-                    text = "Import CSV files",
-                    onClick = {
-                        // Wildcard MIME type: CSV files come with many types from many sources
-                        filePickerLauncher.launch("*/*")
-                    },
-                    enabled = !uiState.isAddingFile,
-                    modifier = Modifier.weight(1f)
-                )
-                SecondaryButton(
-                    text = "Check online",
-                    onClick = {
-                        context.startActivity(
-                            Intent(Intent.ACTION_VIEW, "https://github.com/jobisoft/amster".toUri())
-                        )
-                    },
-                    modifier = Modifier.weight(1f)
-                )
+            if (uiState.isAddingFile) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
             }
-            uiState.importMessage?.let {
+            SecondaryButton(
+                text = "Import CSV files",
+                onClick = onImport,
+                enabled = !uiState.isAddingFile,
+                modifier = Modifier.weight(1f)
+            )
+            SecondaryButton(
+                text = "Check online",
+                onClick = onCheckOnline,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        uiState.importMessage?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        // Error message
+        uiState.error?.let { error ->
+            GlassCardFull(tint = MaterialTheme.colorScheme.errorContainer) {
                 Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    text = error,
+                    color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
+        }
 
-            // Error message
-            uiState.error?.let { error ->
-                GlassCardFull(tint = MaterialTheme.colorScheme.errorContainer) {
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                }
+        // CSV Files List: one panel that looks like a folder listing, one line per file
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = "Configured CSV Files",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        if (uiState.csvFiles.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No CSV files configured",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-
-            // CSV Files List: one panel that looks like a folder listing, one line per file
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = "Configured CSV Files",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            if (uiState.csvFiles.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No CSV files configured",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else {
-                GlassCardFull(
-                    modifier = Modifier.weight(1f, fill = false),
-                    contentPadding = PaddingValues(vertical = 4.dp)
-                ) {
-                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                        itemsIndexed(uiState.csvFiles) { index, fileName ->
-                            if (index > 0) HorizontalDivider(color = AmsterTheme.extras.glassBorder)
-                            CSVFileItem(
-                                fileName = fileName,
-                                onPreview = { onNavigateToPreview(fileName) },
-                                onDelete = { viewModel.removeCSV(fileName) }
-                            )
-                        }
+        } else {
+            GlassCardFull(
+                modifier = Modifier.weight(1f, fill = false),
+                contentPadding = PaddingValues(vertical = 4.dp)
+            ) {
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    itemsIndexed(uiState.csvFiles) { index, fileName ->
+                        if (index > 0) HorizontalDivider(color = AmsterTheme.extras.glassBorder)
+                        CSVFileItem(
+                            fileName = fileName,
+                            onPreview = { onPreview(fileName) },
+                            onDelete = { onDelete(fileName) }
+                        )
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 

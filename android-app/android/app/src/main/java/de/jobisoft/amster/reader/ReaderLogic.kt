@@ -55,10 +55,14 @@ data class Edit(val year: Int, val title: String, val artist: String, val amazon
 /** The cards with a correction: the number the screen shows next to the cards scanned in this visit. */
 data class Counters(val updated: Int)
 
+/** What the reader screen shows: the camera, or the data of a card. */
+enum class ReaderView { CAMERA, DATA }
+
 /** The logic of the reader mode without Android: CSV lines, the year check, the counters. */
 object ReaderLogic {
-    /** Said in the reader where the user changes a card: in the overlays "Update manually" and "Add manually" and in the OCR mode. */
-    const val UPDATES_NOTE = "Updates stay on this phone. \"Export\" sends them as a file."
+    /** A card, an unknown card or an error is shown as data, otherwise the camera waits for a scan. */
+    fun view(card: Boolean, unknown: Boolean, error: Boolean): ReaderView =
+        if (card || unknown || error) ReaderView.DATA else ReaderView.CAMERA
 
     const val RESULT_HEADER = "time,set,card,verdict,ourYear,ourTitle,ourArtist,cardYear,cardTitle,cardArtist,source,ourAmazonId,cardAmazonId,ourAlbum,cardAlbum"
 

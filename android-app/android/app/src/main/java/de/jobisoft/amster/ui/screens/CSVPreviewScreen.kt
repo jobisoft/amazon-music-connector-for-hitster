@@ -21,7 +21,6 @@ fun CSVPreviewScreen(
 ) {
     val viewModel: CSVPreviewViewModel = hiltViewModel()
     val csvFileManager = viewModel.csvFileManager
-    val scrollState = rememberScrollState()
     var content by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -38,45 +37,52 @@ fun CSVPreviewScreen(
     }
     
     ScreenScaffold(title = "Preview: $fileName") {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            when {
-                isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                error != null -> {
-                    Text(
-                        text = "Error: $error",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-                else -> {
-                    content?.let {
+        CSVPreviewContent(isLoading = isLoading, error = error, content = content)
+    }
+}
+
+/** The body of the screen, stateless: a spinner while loading, an error, or the text of the file. */
+@Composable
+internal fun CSVPreviewContent(isLoading: Boolean, error: String?, content: String?) {
+    val scrollState = rememberScrollState()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        when {
+            isLoading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+            error != null -> {
+                Text(
+                    text = "Error: $error",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            else -> {
+                content?.let {
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
                         Column(
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .weight(1f)
+                                .verticalScroll(scrollState)
+                                .padding(16.dp)
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .verticalScroll(scrollState)
-                                    .padding(16.dp)
-                            ) {
-                                GlassCardFull {
-                                    Text(
-                                        text = it,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
+                            GlassCardFull {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                             }
-                            
                         }
+                        
                     }
                 }
             }

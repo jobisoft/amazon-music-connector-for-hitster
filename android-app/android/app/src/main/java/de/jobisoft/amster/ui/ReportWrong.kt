@@ -1,70 +1,51 @@
 package de.jobisoft.amster.ui
 
-import de.jobisoft.amster.ui.components.SecondaryButton
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import de.jobisoft.amster.reader.EditDraft
 import de.jobisoft.amster.reader.ReportViewModel
 import de.jobisoft.amster.reader.WrongDialog
+import de.jobisoft.amster.reader.ocrAction
 
 /**
- * "Update manually" under the info box, in every build and the same in the game and in the reader: a button
- * that opens the overlay ([WrongDialog]) with the fields at once. In the game it exists only while the card is
- * revealed (the overlay shows the answer), in the reader always ([revealed] = true). After "Save" the overlay
- * closes and the button keeps its name ([label], "Update manually"). A new card resets everything.
- * While the overlay is open the screen below is blocked, the card under it is not replaced (see
- * [de.jobisoft.amster.reader.ReportOverlayState]). With [onOcr] (only the reader, only in a build with OCR) a second button
- * "Update via OCR" stands next to it: it reads the back of the card again and replaces year, title and artist.
+ * The function that opens the edit overlay for [card] (a long press on the shown song), the same in the game and in the reader.
+ * Null while there is no card.
  */
 @Composable
-fun ReportWrongSection(card: ReportCard?, revealed: Boolean, source: String, label: String = "Update manually", note: String? = null, onOcr: (() -> Unit)? = null) {
-    if (card == null) return
+fun rememberOpenEdit(card: ReportCard?): (() -> Unit)? {
+    if (LocalSampleMode.current) return null
     val viewModel: ReportViewModel = hiltViewModel()
-    var open by remember(card.serial) { mutableStateOf(false) }
-    LaunchedEffect(revealed) { if (!revealed) open = false }
-    // the others (reader scans, the quiz) must know while the overlay is up
-    val overlayOpen = open && revealed
-    DisposableEffect(overlayOpen) {
-        viewModel.setOverlayOpen(overlayOpen)
-        onDispose { viewModel.setOverlayOpen(false) }
-    }
-    if (!revealed) return
+    return if (card == null) null else ({ viewModel.open(card) })
+}
 
-    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SecondaryButton(text = label, onClick = { open = true }, modifier = Modifier.weight(1f))
-            if (onOcr != null) {
-                SecondaryButton(text = "Update via OCR", onClick = onOcr, modifier = Modifier.weight(1f))
-            }
-        }
-    }
-    if (open) {
+/**
+ * The edit overlay ([WrongDialog], titled "Edit Card") of the card on the screen, shown while it is open and the card is revealed
+ * (the overlay shows the answer), in the reader always ([revealed] = true). "Save" reports the edit and closes it, Cancel only closes it. While it is open
+ * the screen below is blocked, the card under it is not replaced (see [de.jobisoft.amster.reader.ReportOverlayState]). "Read via OCR" in it
+ * ([onReadOcr], null where the mode has no OCR: the quiz plays random cards, the card is not at hand) opens the OCR page, the overlay is shown
+ * again when the page is closed, with the values it read in the fields.
+ */
+@Composable
+fun ReportWrongOverlay(card: ReportCard?, revealed: Boolean, source: String, onReadOcr: (() -> Unit)?) {
+    if (card == null || LocalSampleMode.current) return
+    val viewModel: ReportViewModel = hiltViewModel()
+    val draft by viewModel.draft.collectAsState()
+    LaunchedEffect(revealed) { if (!revealed) viewModel.closeFor(card) }
+    val shown = draft
+    if (revealed && shown != null && shown.key == EditDraft.key(card.setFile, card.number)) {
         WrongDialog(
-            title = label, note = note, key = card.serial, ourYear = card.year, ourTitle = card.title, ourArtist = card.artist, ourAmazonId = card.amazonId, ourAlbum = card.album,
+            draft = shown, onDraft = viewModel::update,
+            ourYear = card.year, ourTitle = card.title, ourArtist = card.artist, ourAmazonId = card.amazonId, ourAlbum = card.album,
+            onReadOcr = onReadOcr?.let { ocrAction(it) },
             onSave = { edit ->
                 viewModel.report(card, edit, source)
-                open = false
+                viewModel.close()
             },
-            // only the overlay closes, the button stays
-            onCancel = { open = false }
+            // only the overlay closes
+            onCancel = viewModel::close
         )
     }
 }

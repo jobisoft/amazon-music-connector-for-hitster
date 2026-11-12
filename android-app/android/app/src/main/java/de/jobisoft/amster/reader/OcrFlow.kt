@@ -30,14 +30,13 @@ data class PendingCard(val setFile: String, val number: Int, val edition: String
 /** An unknown card on the screen: [setKnown] is false for a card of a set the app does not know (then it asks for the name first). */
 data class UnknownCard(val pending: PendingCard, val setKnown: Boolean, val setName: String)
 
-/** How an unknown card is added. */
-enum class AddMode { MANUAL, OCR }
-
-/** The OCR mode of the reader. [hint] is the line under the banner. */
+/** The state of the OCR page: what is collected and analysed so far. */
 data class OcrState(
     val pending: PendingCard,
     val phase: OcrPhase = OcrPhase.WAITING,
     val startedAt: Long = 0L,
+    /** Pictures of the camera that were sharp enough to be read. */
+    val scans: Int = 0,
     /** Good pictures collected so far (of [OcrCapture.NEEDED]). */
     val captured: Int = 0,
     /** In the analysis: readings done of readings planned. */
@@ -46,9 +45,6 @@ data class OcrState(
 )
 
 object OcrFlow {
-    /** After this long without a result the reader says so and offers to cancel; it keeps looking meanwhile. */
-    const val FAIL_AFTER_MS = 20_000L
-
     /** One frame for the OCR at most this often. */
     const val FRAME_EVERY_MS = 1_000L
 
@@ -62,8 +58,4 @@ object OcrFlow {
         setKnown -> UnknownCardKind.NEW_CARD
         else -> UnknownCardKind.NEW_EDITION
     }
-
-    /** The phase after a time without a result. */
-    fun phaseAfter(state: OcrState, now: Long): OcrPhase =
-        if (state.phase == OcrPhase.WAITING && state.startedAt > 0 && now - state.startedAt >= FAIL_AFTER_MS) OcrPhase.FAILED else state.phase
 }

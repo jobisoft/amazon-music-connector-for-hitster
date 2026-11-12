@@ -1,6 +1,9 @@
 package de.jobisoft.amster
 
+import de.jobisoft.amster.reader.EditDraft
+import de.jobisoft.amster.reader.OcrCard
 import de.jobisoft.amster.reader.ReaderLogic
+import de.jobisoft.amster.reader.ReaderView
 import de.jobisoft.amster.reader.ResultRow
 import de.jobisoft.amster.reader.Verdict
 import org.junit.Assert.assertEquals
@@ -283,5 +286,42 @@ class ReaderLogicTest {
         val edit = ReaderLogic.evaluateEdit("2006", "Re\nhab", "Amy\nWinehouse", 2006, "Rehab", "Amy Winehouse", 2030)
         assertEquals("Re hab", edit!!.title)
         assertEquals("Amy Winehouse", edit.artist)
+    }
+
+    @Test
+    fun `the reader shows the camera until something is on the screen`() {
+        assertEquals(ReaderView.CAMERA, ReaderLogic.view(card = false, unknown = false, error = false))
+        assertEquals(ReaderView.DATA, ReaderLogic.view(card = true, unknown = false, error = false))
+        assertEquals(ReaderView.DATA, ReaderLogic.view(card = false, unknown = true, error = false))
+        assertEquals(ReaderView.DATA, ReaderLogic.view(card = false, unknown = false, error = true))
+    }
+
+    @Test
+    fun `the OCR result goes into artist, year and title and keeps album and Amazon ID`() {
+        val draft = EditDraft.of("Edit Card", "hitster-de-aaaa0075.csv", 82, "Ich", 2007, "Vom", "B0ABC12345", "Album")
+        val read = draft.withOcr(OcrCard("Ich + Ich", 2007, "Vom selben Stern"))
+        assertEquals("Ich + Ich", read.artist)
+        assertEquals("2007", read.yearText)
+        assertEquals("Vom selben Stern", read.title)
+        assertEquals("Album", read.albumText)
+        assertEquals("B0ABC12345", read.amazonIdText)
+        assertTrue(read.ocrUsed)
+        assertFalse(draft.ocrUsed)
+    }
+
+    @Test
+    fun `values that the OCR read the same as ours leave Save off`() {
+        val draft = EditDraft.of("Edit Card", "hitster-de-aaaa0075.csv", 82, "Ich + Ich", 2007, "Vom selben Stern", null, null)
+        val read = draft.withOcr(OcrCard("Ich + Ich", 2007, "Vom selben Stern"))
+        val edit = ReaderLogic.evaluateEdit(read.yearText, read.title, read.artist, 2007, "Vom selben Stern", "Ich + Ich", 2030, read.amazonIdText, null, read.albumText, null)
+        assertNull(edit)
+    }
+
+    @Test
+    fun `values that the OCR read differently turn Save on`() {
+        val draft = EditDraft.of("Edit Card", "hitster-de-aaaa0075.csv", 82, "Ich + Ich", 2007, "Vom selben Stern", null, null)
+        val read = draft.withOcr(OcrCard("Ich + Ich", 2008, "Vom selben Stern"))
+        val edit = ReaderLogic.evaluateEdit(read.yearText, read.title, read.artist, 2007, "Vom selben Stern", "Ich + Ich", 2030, read.amazonIdText, null, read.albumText, null)
+        assertEquals(2008, edit!!.year)
     }
 }

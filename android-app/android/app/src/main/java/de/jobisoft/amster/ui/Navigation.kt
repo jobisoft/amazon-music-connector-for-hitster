@@ -13,6 +13,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import de.jobisoft.amster.gallery.galleryEntry
+import de.jobisoft.amster.gallery.galleryRoutes
+import de.jobisoft.amster.reader.OcrScreen
 import de.jobisoft.amster.ui.screens.AboutScreen
 import de.jobisoft.amster.ui.screens.OptionsScreen
 import de.jobisoft.amster.ui.screens.CardConfigScreen
@@ -40,6 +43,7 @@ sealed class Screen(val route: String) {
     object Help : Screen("help")
     object Licenses : Screen("licenses")
     object About : Screen("about")
+    object Ocr : Screen("ocr")
 }
 
 @Composable
@@ -64,7 +68,8 @@ fun AppNavigation(
                 onNavigateToOptions = { navController.navigate(Screen.Options.route) },
                 onNavigateToHelp = { navController.navigate(Screen.Help.route) },
                 onNavigateToLicenses = { navController.navigate(Screen.Licenses.route) },
-                onNavigateToAbout = { navController.navigate(Screen.About.route) }
+                onNavigateToAbout = { navController.navigate(Screen.About.route) },
+                onNavigateToGallery = galleryEntry(navController)
             )
         }
     
@@ -90,7 +95,8 @@ fun AppNavigation(
 
         composable(Screen.Scanner.route) {
             ScannerScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onReadOcr = { navController.navigate(Screen.Ocr.route) }
             )
         }
 
@@ -114,6 +120,12 @@ fun AppNavigation(
         }
 
         readerRoute(navController) // the reader route, in every build
+        galleryRoutes(navController) // the screens gallery, only in the debug app
+
+        // the OCR page of the edit overlay, the screen below shows the overlay again when it closes
+        composable(Screen.Ocr.route) {
+            OcrScreen(onNavigateBack = { navController.popBackStack() })
+        }
 
         composable(Screen.Options.route) {
             OptionsScreen(

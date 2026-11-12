@@ -1,6 +1,5 @@
 package de.jobisoft.amster.ui.components
 
-import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -29,7 +28,6 @@ import de.jobisoft.amster.ui.theme.Dimens
 fun ScreenScaffold(
     title: String?,
     modifier: Modifier = Modifier,
-    contentMaxWidth: Dp = Dimens.ContentMaxWidth,
     content: @Composable BoxScope.() -> Unit
 ) {
     AmsterBackground(modifier) {
@@ -49,7 +47,7 @@ fun ScreenScaffold(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentAlignment = Alignment.TopCenter
             ) {
-                Box(modifier = Modifier.widthIn(max = contentMaxWidth).fillMaxSize(), content = content)
+                Box(modifier = Modifier.widthIn(max = Dimens.ContentMaxWidth).fillMaxSize(), content = content)
             }
         }
     }

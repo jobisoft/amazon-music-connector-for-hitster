@@ -48,18 +48,18 @@ fun HelpScreen(
                     content = """
                         1. Play Mode: scan a card. The song starts at the start position set in the Options, 20 seconds by default (short songs earlier). Title, artist and year stay hidden, tap the blurred box to show them. The buttons pause, stop and jump 10 seconds. The camera closes after 15 seconds and the app goes back to the main screen.
                         2. Quiz Mode: pick card sets. Random cards play one after another, none twice until all have played.
-                        3. Reader Mode: scan a card to see its artist, year and title. Nothing plays here. A card the app does not know can be added here, by typing it in ("Add manually") or by reading the back of the card ("Add via OCR").
+                        3. Reader Mode: scan a card to see its artist, year and title. "Scan next card" brings the camera back. Press and hold the song box to edit the card. Nothing plays here. A card the app does not know can be added with "Add Card".
                     """.trimIndent()
                 )
 
                 Section(
                     title = "Notes",
                     content = """
-                        • A value is wrong? Tap "Update manually", change the values and save. The update stays on this phone. "Export" on the main screen shares your updates as a file.
+                        • A value is wrong? Reveal the song, press and hold the box, change the values and save. In Reader Mode press and hold the song box. In Play Mode and Reader Mode the overlay can read the back of the card ("Read via OCR"). The modification stays on this phone. "Export" on the main screen shares your modifications as a file.
                         • A song is paused one second before its end, so Amazon should not go on with another song.
                         • If the Amazon Music app stays on top, go back to this app.
                         • "Card Config" imports more card sets from CSV files on the phone. A file needs the columns Card#, Title, Artist and Year.
-                        • In Reader Mode an unknown card shows "Add manually" and "Add via OCR", which reads the back of the card. "Update via OCR" next to "Update manually" reads a shown card again.
+                        • In Reader Mode an unknown card shows "Add Card".
                     """.trimIndent()
                 )
 

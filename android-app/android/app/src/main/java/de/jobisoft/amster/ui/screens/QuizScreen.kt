@@ -1,6 +1,5 @@
 package de.jobisoft.amster.ui.screens
 
-import de.jobisoft.amster.ui.theme.Dimens
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -34,7 +33,7 @@ fun QuizScreen(
     HideStatusBar(true)
     LaunchedEffect(files) { viewModel.start(files) }
 
-    ScreenScaffold(title = "Quiz Mode", contentMaxWidth = Dimens.WideMaxWidth) {
+    ScreenScaffold(title = "Quiz Mode") {
         Box(modifier = Modifier.fillMaxSize()) {
             ResultView(
                 // before the first card is on its way the screen shows "sending", not nothing
@@ -47,7 +46,9 @@ fun QuizScreen(
                 onCancel = {
                     viewModel.cancelAndLeave() // like Back: stops the song, leaves to the picker
                     onNavigateBack()
-                }
+                },
+                // the quiz plays random cards, the card is not at hand: no OCR
+                onReadOcr = null
             )
         }
     }

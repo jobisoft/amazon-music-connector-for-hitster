@@ -1,7 +1,7 @@
 package de.jobisoft.amster.util
 
 /**
- * The camera timeout of Play Mode: the camera is on for [MS], then the app goes back to the main screen. It starts
+ * The camera timeout of the camera view (Play Mode and Reader Mode): the camera is on for [MS], then the app goes back to the main screen. It starts
  * when the camera turns on (the screen opens, "Scan next card", Cancel) and a scan ends it. Pure, so it can be tested.
  */
 object ScanTimeout {

@@ -2,6 +2,7 @@ package de.jobisoft.amster.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -102,6 +103,29 @@ internal fun StatusCard(title: String, isError: Boolean, subtitle: String? = nul
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * A card that cannot be played or shown, as plain text without a box: the [title] ("Unknown card 12") bigger, the [lines] under it.
+ * Play Mode and Reader Mode both use it, so the screens do not drift apart.
+ */
+@Composable
+internal fun UnknownCardView(title: String, lines: List<String>) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(24.dp)
+    ) {
+        Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+        lines.forEach { line ->
+            Text(
+                line,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

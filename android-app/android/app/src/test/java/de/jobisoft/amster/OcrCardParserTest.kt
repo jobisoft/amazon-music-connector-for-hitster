@@ -4,10 +4,7 @@ import de.jobisoft.amster.reader.OcrCard
 import de.jobisoft.amster.reader.OcrCardParser
 import de.jobisoft.amster.reader.OcrFlow
 import de.jobisoft.amster.reader.OcrLine
-import de.jobisoft.amster.reader.OcrPhase
 import de.jobisoft.amster.reader.OcrStability
-import de.jobisoft.amster.reader.OcrState
-import de.jobisoft.amster.reader.PendingCard
 import de.jobisoft.amster.reader.UnknownCardKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -172,13 +169,5 @@ class OcrCardParserTest {
         assertEquals(UnknownCardKind.NEW_CARD, OcrFlow.kind(hasInfo = true, cardFound = false, setKnown = true))
         assertNull(OcrFlow.kind(hasInfo = true, cardFound = true, setKnown = true))
         assertNull("a card of a set without a name is known when it has a correction", OcrFlow.kind(hasInfo = true, cardFound = true, setKnown = false))
-    }
-
-    @Test
-    fun theOcrFailsAfterTwentySecondsWithoutAResult() {
-        val s = OcrState(PendingCard("hitster-de-aaaa0099.csv", 5), OcrPhase.WAITING, startedAt = 1_000)
-        assertEquals(OcrPhase.WAITING, OcrFlow.phaseAfter(s, 20_999))
-        assertEquals(OcrPhase.FAILED, OcrFlow.phaseAfter(s, 21_000))
-        assertEquals(OcrPhase.ANALYSING, OcrFlow.phaseAfter(s.copy(phase = OcrPhase.ANALYSING), 99_999))
     }
 }
