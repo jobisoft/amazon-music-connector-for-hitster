@@ -1,6 +1,6 @@
 # Card sets
 
-One CSV file per Hitster edition: which card number is which song. The Android app bundles them. Gradle adds the folder `assets/` to the assets of the app (`assets.srcDir(...)` in `amazon-app-android-connector/android/app/build.gradle.kts`), nothing is copied. This README and the folder `assets/amazon-data` are not part of the app.
+One CSV file per Hitster edition: which card number is which song. The Android app bundles them. Gradle adds the folder `assets/` to the assets of the app (`assets.srcDir(...)` in `android-app/android/app/build.gradle.kts`), nothing is copied. This README and the folder `assets/amazon-data` are not part of the app.
 
 The files are based in part on [andygruber/songseeker-hitster-playlists](https://github.com/andygruber/songseeker-hitster-playlists), with changes and additional columns. The license text is in `LICENSE-songseeker-hitster-playlists.txt`.
 

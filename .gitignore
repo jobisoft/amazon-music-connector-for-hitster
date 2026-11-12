@@ -1,3 +1,7 @@
 # Run logs of the scraper scripts
 amazon-web-scanner/logs/
 __pycache__/
+
+# Signing keys of the Store bundle: never in Git
+*.jks
+*.keystore

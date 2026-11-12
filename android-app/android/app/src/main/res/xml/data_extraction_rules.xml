@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 and newer: same rules for the cloud backup and the transfer to a new phone. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="last_crash.txt" />
+        <exclude domain="sharedpref" path="crash_reporter.xml" />
+        <exclude domain="sharedpref" path="volume_duck.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="last_crash.txt" />
+        <exclude domain="sharedpref" path="crash_reporter.xml" />
+        <exclude domain="sharedpref" path="volume_duck.xml" />
+    </device-transfer>
+</data-extraction-rules>

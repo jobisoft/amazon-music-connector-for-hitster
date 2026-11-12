@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older: everything is saved except the crash report and the saved volume level,
+     they only make sense on the phone where they were written. -->
+<full-backup-content>
+    <exclude domain="file" path="last_crash.txt" />
+    <exclude domain="sharedpref" path="crash_reporter.xml" />
+    <exclude domain="sharedpref" path="volume_duck.xml" />
+</full-backup-content>

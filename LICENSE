@@ -1,6 +1,6 @@
 This repository contains parts under different licenses. Each part has its own license file.
 
-Android app (amazon-app-android-connector)
+Android app (android-app)
   MIT License, see android/LICENSE.mit. The app is based on SubSonicSter by langhaarschneider,
   whose original notice is android/LICENSE.
 
