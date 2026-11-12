@@ -2,7 +2,7 @@ package de.jobisoft.amster.util
 
 import android.media.session.PlaybackState
 
-/** The one line under "Sending card info to the Amazon Music app ..." while a play request runs. */
+/** The one line under "Sending song to the Amazon Music app." while a play request runs. */
 object PlayStatus {
     const val WAKING = "connecting to Amazon Music"
     const val LOADING = "loading"

@@ -1,82 +1,57 @@
 package de.jobisoft.amster.ui.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Pink80,
-    onPrimary = Color.Black,
-    primaryContainer = PinkGrey80,
-    onPrimaryContainer = Color.Black,
-    secondary = PinkGrey80,
-    onSecondary = Color.Black,
-    tertiary = Magenta80,
-    onTertiary = Color.Black,
-    background = Color.Black,
-    onBackground = Color.White,
-    surface = Color.Black,
-    onSurface = Color.White,
-    surfaceVariant = Color(0xFF1A1A1A),
-    onSurfaceVariant = Color.White,
-    error = Color(0xFFFF5252),
-    onError = Color.Black,
-    errorContainer = Color(0xFF8B0000),
-    onErrorContainer = Color.White,
-    outline = Color(0xFF424242),
-    outlineVariant = Color(0xFF2A2A2A)
+private val AmsterColorScheme = darkColorScheme(
+    primary = palette(Palette.ACCENT_A),
+    onPrimary = palette(Palette.ON_ACCENT),
+    primaryContainer = palette(Palette.SURFACE_HIGH),
+    onPrimaryContainer = palette(Palette.TEXT),
+    secondary = palette(Palette.ACCENT_B),
+    onSecondary = palette(Palette.ON_ACCENT),
+    secondaryContainer = palette(Palette.SURFACE_HIGH),
+    onSecondaryContainer = palette(Palette.TEXT),
+    tertiary = palette(Palette.SUCCESS),
+    onTertiary = palette(Palette.ON_SUCCESS),
+    tertiaryContainer = palette(Palette.SUCCESS_CONTAINER),
+    onTertiaryContainer = palette(Palette.SUCCESS),
+    background = palette(Palette.BG_TOP),
+    onBackground = palette(Palette.TEXT),
+    surface = palette(Palette.SURFACE),
+    onSurface = palette(Palette.TEXT),
+    surfaceVariant = palette(Palette.SURFACE_HIGH),
+    onSurfaceVariant = palette(Palette.TEXT_DIM),
+    surfaceContainerLowest = palette(Palette.BG_TOP),
+    surfaceContainerLow = palette(Palette.SURFACE),
+    surfaceContainer = palette(Palette.SURFACE),
+    surfaceContainerHigh = palette(Palette.SURFACE_HIGH),
+    surfaceContainerHighest = palette(Palette.SURFACE_HIGH),
+    error = palette(Palette.ERROR),
+    onError = palette(Palette.ON_ACCENT),
+    errorContainer = palette(Palette.ERROR_CONTAINER),
+    onErrorContainer = palette(Palette.TEXT),
+    outline = Color.White.copy(alpha = 0.32f),
+    outlineVariant = Color.White.copy(alpha = Palette.GLASS_BORDER_ALPHA)
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Pink40,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFFFD6E7),
-    onPrimaryContainer = Color.Black,
-    secondary = PinkGrey40,
-    onSecondary = Color.White,
-    tertiary = Magenta40,
-    onTertiary = Color.White,
-    background = Color.Black,
-    onBackground = Color.White,
-    surface = Color.Black,
-    onSurface = Color.White,
-    surfaceVariant = Color(0xFF1A1A1A),
-    onSurfaceVariant = Color.White,
-    error = Color(0xFFFF5252),
-    onError = Color.Black,
-    errorContainer = Color(0xFF8B0000),
-    onErrorContainer = Color.White,
-    outline = Color(0xFF424242),
-    outlineVariant = Color(0xFF2A2A2A)
-)
-
+/** The one theme of the app: always dark, gradient background, glass cards. */
 @Composable
-fun AmSterTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color disabled to use our black theme consistently
-    dynamicColor: Boolean = false,
-    content: @Composable () -> Unit
-) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+fun AmsterTheme(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalAmsterExtras provides DefaultExtras) {
+        MaterialTheme(
+            colorScheme = AmsterColorScheme,
+            typography = Typography,
+            shapes = AmsterShapes,
+            content = content
+        )
     }
+}
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+object AmsterTheme {
+    val extras: AmsterExtras
+        @Composable get() = LocalAmsterExtras.current
 }

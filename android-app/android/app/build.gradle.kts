@@ -64,7 +64,7 @@ android {
         // version code that only grows, so that Android accepts it as an update.
         // Without it (Android Studio) the app is a "dev" build.
         versionCode = (project.findProperty("buildVersionCode") as String?)?.toInt() ?: 1
-        versionName = "1.2.0-" + ((project.findProperty("buildStamp") as String?) ?: "dev")
+        versionName = "1.3.0-" + ((project.findProperty("buildStamp") as String?) ?: "dev")
         // only 64-bit ARM (every phone of the last years): the native library of ML Kit is 10 MB per processor type, the app is much
         // smaller without the others. Not for an emulator with x86 and not for an old 32-bit phone.
         ndk {
@@ -122,12 +122,12 @@ android {
             if (storeBuild) {
                 signingConfig = signingConfigs.getByName("upload")
                 versionNameSuffix = "-store"
-                resValue("string", "app_name", "AmSter")
+                resValue("string", "app_name", "Amster")
             } else {
                 signingConfig = signingConfigs.getByName("debug")
                 applicationIdSuffix = ".apk"
                 versionNameSuffix = "-apk"
-                resValue("string", "app_name", "AmSter (APK)")
+                resValue("string", "app_name", "Amster (Beta)")
             }
             buildConfigField("boolean", "DEBUG_CHANNEL", "false")
             buildConfigField("boolean", "OCR_ENABLED", ocrInProd.toString())

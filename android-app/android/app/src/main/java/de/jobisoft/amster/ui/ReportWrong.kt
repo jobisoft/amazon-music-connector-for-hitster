@@ -1,5 +1,6 @@
 package de.jobisoft.amster.ui
 
+import de.jobisoft.amster.ui.components.SecondaryButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,11 +50,9 @@ fun ReportWrongSection(card: ReportCard?, revealed: Boolean, source: String, lab
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(modifier = Modifier.height(8.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { open = true }, modifier = Modifier.weight(1f).height(48.dp)) {
-                Text(label, textAlign = TextAlign.Center)
-            }
+            SecondaryButton(text = label, onClick = { open = true }, modifier = Modifier.weight(1f))
             if (onOcr != null) {
-                OutlinedButton(onClick = onOcr, modifier = Modifier.weight(1f).height(48.dp)) { Text("Update via OCR") }
+                SecondaryButton(text = "Update via OCR", onClick = onOcr, modifier = Modifier.weight(1f))
             }
         }
     }

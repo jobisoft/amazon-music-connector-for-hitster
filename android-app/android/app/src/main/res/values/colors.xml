@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- the top of the gradient, also the window background, so that nothing flashes light before the first frame -->
+    <color name="amster_background">#FF070B14</color>
+</resources>

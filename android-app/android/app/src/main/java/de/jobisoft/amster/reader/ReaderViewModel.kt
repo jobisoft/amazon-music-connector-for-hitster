@@ -427,14 +427,23 @@ class ReaderViewModel @Inject constructor(
      */
     private suspend fun saveCard(pending: PendingCard, year: Int, title: String, artist: String, source: String, amazonId: String?, album: String?) {
         val previous = overrides.forSet(pending.setFile)[pending.number]
-        overrides.add(
-            CardOverride(
-                pending.setFile, pending.number, year, title, artist, timeFormat.format(Date()), source,
-                amazonId = amazonId ?: previous?.amazonId, album = album ?: previous?.album,
-                edition = pending.edition?.takeIf { overrides.editionOf(pending.setFile) == null } ?: previous?.edition
-            )
+        // a card that is known and reads the same again is not an update: nothing is stored, the card is just shown
+        val known = csvRepository.getSongFromCSV(pending.setFile, pending.number).getOrNull()
+        val unchanged = known != null && CorrectionLogic.isUnchanged(
+            known.year, known.title, known.artist, known.amazonId, known.album, year, title, artist, amazonId, album
         )
-        DebugLog.log("reader", "reader card added", mapOf("source" to source, "set" to pending.setFile, "card" to pending.number, "year" to year, "title" to title, "artist" to artist))
+        if (unchanged) {
+            DebugLog.log("reader", "reader card unchanged", mapOf("source" to source, "set" to pending.setFile, "card" to pending.number))
+        } else {
+            overrides.add(
+                CardOverride(
+                    pending.setFile, pending.number, year, title, artist, timeFormat.format(Date()), source,
+                    amazonId = amazonId ?: previous?.amazonId, album = album ?: previous?.album,
+                    edition = pending.edition?.takeIf { overrides.editionOf(pending.setFile) == null } ?: previous?.edition
+                )
+            )
+            DebugLog.log("reader", "reader card added", mapOf("source" to source, "set" to pending.setFile, "card" to pending.number, "year" to year, "title" to title, "artist" to artist))
+        }
         val song = csvRepository.getSongFromCSV(pending.setFile, pending.number).getOrNull()
         val mine = ++serial
         _state.value = _state.value.copy(ocr = null, manualAdd = null, askEdition = null, unknown = null, analysisFrame = null)
@@ -451,15 +460,4 @@ class ReaderViewModel @Inject constructor(
             scanned = if (card != null) _state.value.scanned + 1 else _state.value.scanned
         )
     }
-
-    // ── the export ────────────────────────────────────────────────────────────────
-
-    /** The corrections of this phone, for the export. */
-    fun corrections(): List<CardOverride> = store.corrections()
-
-    /** A short line for the screen, for example when there is nothing to export. */
-    fun say(text: String) {
-        _state.value = _state.value.copy(message = text)
-    }
-
 }

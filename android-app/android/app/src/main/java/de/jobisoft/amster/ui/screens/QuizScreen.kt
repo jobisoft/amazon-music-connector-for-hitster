@@ -1,5 +1,6 @@
 package de.jobisoft.amster.ui.screens
 
+import de.jobisoft.amster.ui.theme.Dimens
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import de.jobisoft.amster.ui.components.ScreenScaffold
 import de.jobisoft.amster.ui.viewmodel.QuizViewModel
 import de.jobisoft.amster.ui.viewmodel.SendState
 
@@ -32,14 +34,8 @@ fun QuizScreen(
     HideStatusBar(true)
     LaunchedEffect(files) { viewModel.start(files) }
 
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Quiz") }) }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+    ScreenScaffold(title = "Quiz Mode", contentMaxWidth = Dimens.WideMaxWidth) {
+        Box(modifier = Modifier.fillMaxSize()) {
             ResultView(
                 // before the first card is on its way the screen shows "sending", not nothing
                 state = if (uiState.sendState == SendState.IDLE) uiState.copy(sendState = SendState.SENDING) else uiState,
@@ -50,10 +46,6 @@ fun QuizScreen(
                 onNext = viewModel::playNextRandom,
                 onCancel = {
                     viewModel.cancelAndLeave() // like Back: stops the song, leaves to the picker
-                    onNavigateBack()
-                },
-                onBack = {
-                    viewModel.leave() // stops the song, the navigation does not wait for it
                     onNavigateBack()
                 }
             )

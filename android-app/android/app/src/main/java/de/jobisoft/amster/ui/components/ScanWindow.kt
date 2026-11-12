@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +29,6 @@ fun SquareScanWindow(
 ) {
     BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
         val side: Dp = minOf(maxWidth * SCAN_WINDOW_WIDTH_SHARE, maxHeight)
-        Box(modifier = Modifier.size(side), content = content)
+        Box(modifier = Modifier.size(side).clip(RoundedCornerShape(28.dp)), content = content)
     }
 }

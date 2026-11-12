@@ -64,9 +64,6 @@ class ReaderStore @Inject constructor(
         }
     }
 
-    /** The corrections on this phone, for the export. */
-    fun corrections(): List<CardOverride> = overrides.all()
-
     /**
      * Records a report of a wrong card: the counter, the line in the file, the event `reader verdict`, and
      * the correction ([CardOverrides]) that lies over the card data at once. The file is written on the

@@ -9,7 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import de.jobisoft.amster.ui.components.BackButton
+import de.jobisoft.amster.ui.components.ScreenScaffold
 import de.jobisoft.amster.ui.components.MarkdownContent
 import org.commonmark.parser.Parser
 import org.commonmark.node.Node
@@ -49,17 +49,10 @@ fun LicensesScreen(
         }
     }
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Open Source Licenses") }
-            )
-        }
-    ) { paddingValues ->
+    ScreenScaffold(title = "Open Source Licenses") {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
         ) {
             Column(
                 modifier = Modifier
@@ -83,11 +76,6 @@ fun LicensesScreen(
                 }
             }
             
-            // Centered Back button at the bottom
-            BackButton(
-                onClick = onNavigateBack,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
         }
     }
 }

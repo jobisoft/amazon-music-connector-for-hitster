@@ -25,6 +25,18 @@ data class CardOverride(
 object CorrectionLogic {
     const val HEADER = "set,card,year,title,artist,time,source,amazonId,album,edition"
 
+    /**
+     * True if what was read says nothing new about a card that is already known: the same year, title and artist (compared
+     * trimmed), and the id and the album only count when they are given (null keeps the old one). Such a correction is not stored.
+     */
+    fun isUnchanged(
+        year: Int?, title: String, artist: String, amazonId: String?, album: String?,
+        newYear: Int, newTitle: String, newArtist: String, newAmazonId: String?, newAlbum: String?
+    ): Boolean =
+        year == newYear && title.trim() == newTitle.trim() && artist.trim() == newArtist.trim() &&
+            (newAmazonId == null || newAmazonId == amazonId.orEmpty()) &&
+            (newAlbum == null || newAlbum == album.orEmpty())
+
     /** The card number of the row that only names a set (a set without a card yet): there is no card 0. */
     const val SET_ROW = 0
 

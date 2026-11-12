@@ -1,5 +1,9 @@
 package de.jobisoft.amster.reader
 
+import de.jobisoft.amster.ui.theme.AmsterTheme
+import de.jobisoft.amster.ui.components.SecondaryButton
+import de.jobisoft.amster.ui.components.PrimaryButton
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -73,8 +77,9 @@ fun WrongDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false)
     ) {
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            tonalElevation = 6.dp,
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = BorderStroke(1.dp, AmsterTheme.extras.glassBorder),
             modifier = Modifier.fillMaxWidth().padding(16.dp).imePadding()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -136,8 +141,8 @@ fun WrongDialog(
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f).height(56.dp)) { Text("Cancel") }
-                    Button(onClick = { edit?.let(onSave) }, enabled = edit != null, modifier = Modifier.weight(1f).height(56.dp)) { Text("Save") }
+                    SecondaryButton(text = "Cancel", onClick = onCancel, modifier = Modifier.weight(1f))
+                    PrimaryButton(text = "Save", onClick = { edit?.let(onSave) }, enabled = edit != null, modifier = Modifier.weight(1f))
                 }
             }
         }

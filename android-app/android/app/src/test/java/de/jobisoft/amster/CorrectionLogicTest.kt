@@ -160,4 +160,19 @@ class CorrectionLogicTest {
     fun theFileNameHasTheDate() {
         assertEquals("hitster-corrections-2026-11-09.csv", CorrectionLogic.exportFileName("2026-11-09"))
     }
+
+    @Test
+    fun aCardThatReadsTheSameAgainIsNotAnUpdate() {
+        assertTrue(CorrectionLogic.isUnchanged(1984, "Jump", "Van Halen", "B0001", "1984", 1984, " Jump ", "Van Halen", null, null))
+        assertTrue(CorrectionLogic.isUnchanged(1984, "Jump", "Van Halen", null, null, 1984, "Jump", "Van Halen", "", ""))
+    }
+
+    @Test
+    fun anyChangedValueIsAnUpdate() {
+        assertFalse(CorrectionLogic.isUnchanged(1984, "Jump", "Van Halen", null, null, 1985, "Jump", "Van Halen", null, null))
+        assertFalse(CorrectionLogic.isUnchanged(1984, "Jump", "Van Halen", null, null, 1984, "Jump!", "Van Halen", null, null))
+        assertFalse(CorrectionLogic.isUnchanged(1984, "Jump", "Van Halen", null, null, 1984, "Jump", "Van Halen ", "B0002", null))
+        assertFalse(CorrectionLogic.isUnchanged(1984, "Jump", "Van Halen", "B0001", null, 1984, "Jump", "Van Halen", "B0002", null))
+        assertFalse(CorrectionLogic.isUnchanged(1984, "Jump", "Van Halen", null, "1984", 1984, "Jump", "Van Halen", null, "Other"))
+    }
 }

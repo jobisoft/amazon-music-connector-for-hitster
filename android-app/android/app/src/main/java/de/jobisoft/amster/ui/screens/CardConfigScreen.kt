@@ -1,5 +1,12 @@
 package de.jobisoft.amster.ui.screens
 
+import de.jobisoft.amster.ui.theme.AmsterTheme
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.layout.PaddingValues
+import de.jobisoft.amster.ui.components.GlassCardFull
+import de.jobisoft.amster.ui.components.SecondaryButton
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -13,7 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import de.jobisoft.amster.ui.components.BackButton
+import de.jobisoft.amster.ui.components.ScreenScaffold
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
 import android.content.Intent
@@ -38,93 +45,78 @@ fun CardConfigScreen(
         viewModel.addLocalCSVs(context, uris.map { it to (getFileNameFromUri(context, it) ?: "imported_file.csv") })
     }
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Card Config") }
-            )
-        }
-    ) { paddingValues ->
+    ScreenScaffold(title = "Card Config") {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedButton(
-                onClick = {
-                    context.startActivity(
-                        Intent(Intent.ACTION_VIEW, "https://github.com/jobisoft/amster".toUri())
-                    )
-                },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-            ) {
-                Text("This project on GitHub")
-            }
+            Text(
+                text = "A card set tells Amster which song belongs to which card number. The sets that come with the app are " +
+                    "listed below. You can add more as CSV files with the Card#, Title, Artist and Year columns, " +
+                    "or check our GitHub Repository for available set files.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.Center
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedButton(
+                if (uiState.isAddingFile) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                }
+                SecondaryButton(
+                    text = "Import CSV files",
                     onClick = {
                         // Wildcard MIME type: CSV files come with many types from many sources
                         filePickerLauncher.launch("*/*")
                     },
-                    enabled = !uiState.isAddingFile
-                ) {
-                    if (uiState.isAddingFile) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp)
+                    enabled = !uiState.isAddingFile,
+                    modifier = Modifier.weight(1f)
+                )
+                SecondaryButton(
+                    text = "Check online",
+                    onClick = {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, "https://github.com/jobisoft/amster".toUri())
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text("Import CSV files")
-                }
+                    },
+                    modifier = Modifier.weight(1f)
+                )
             }
             uiState.importMessage?.let {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
-            HorizontalDivider()
-
             // Error message
             uiState.error?.let { error ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
-                ) {
+                GlassCardFull(tint = MaterialTheme.colorScheme.errorContainer) {
                     Text(
                         text = error,
-                        modifier = Modifier.padding(16.dp),
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
                 }
             }
-            
-            // CSV Files List
+
+            // CSV Files List: one panel that looks like a folder listing, one line per file
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = "Configured CSV Files",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                style = MaterialTheme.typography.titleMedium
             )
-            
+
             if (uiState.csvFiles.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
-                        .padding(16.dp),
+                        .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -134,82 +126,62 @@ fun CardConfigScreen(
                     )
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                GlassCardFull(
+                    modifier = Modifier.weight(1f, fill = false),
+                    contentPadding = PaddingValues(vertical = 4.dp)
                 ) {
-                    items(uiState.csvFiles) { fileName ->
-                        CSVFileItem(
-                            fileName = fileName,
-                            onPreview = { onNavigateToPreview(fileName) },
-                            onDelete = { viewModel.removeCSV(fileName) }
-                        )
+                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                        itemsIndexed(uiState.csvFiles) { index, fileName ->
+                            if (index > 0) HorizontalDivider(color = AmsterTheme.extras.glassBorder)
+                            CSVFileItem(
+                                fileName = fileName,
+                                onPreview = { onNavigateToPreview(fileName) },
+                                onDelete = { viewModel.removeCSV(fileName) }
+                            )
+                        }
                     }
                 }
             }
-            
-            // Back button at the bottom
-            BackButton(
-                onClick = onNavigateBack,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
 
+/** One line of the file list: a file icon, the name in a fixed width font, and the buttons to look into the file and to remove it. */
 @Composable
 fun CSVFileItem(
     fileName: String,
     onPreview: () -> Unit,
     onDelete: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = fileName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    IconButton(onClick = onPreview) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Preview"
-                        )
-                    }
-                    
-                    IconButton(onClick = onDelete) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-            }
+        Icon(
+            imageVector = Icons.Filled.Description,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = fileName,
+            style = MaterialTheme.typography.bodyMedium,
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier.weight(1f)
+        )
+        IconButton(onClick = onPreview) {
+            Icon(imageVector = Icons.Default.Search, contentDescription = "Preview")
+        }
+        IconButton(onClick = onDelete) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Delete",
+                tint = MaterialTheme.colorScheme.error
+            )
         }
     }
 }

@@ -1,5 +1,9 @@
 package de.jobisoft.amster.reader
 
+import de.jobisoft.amster.ui.theme.AmsterTheme
+import de.jobisoft.amster.ui.components.SecondaryButton
+import de.jobisoft.amster.ui.components.PrimaryButton
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,7 +43,11 @@ fun EditionDialog(key: Any, onContinue: (String) -> Unit, onCancel: () -> Unit) 
         onDismissRequest = onCancel,
         properties = DialogProperties(dismissOnClickOutside = false)
     ) {
-        Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = BorderStroke(1.dp, AmsterTheme.extras.glassBorder)
+        ) {
             Column(modifier = Modifier.fillMaxWidth().padding(20.dp).imePadding()) {
                 Text("New card set", style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -55,12 +63,13 @@ fun EditionDialog(key: Any, onContinue: (String) -> Unit, onCancel: () -> Unit) 
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f).height(48.dp)) { Text("Cancel") }
-                    Button(
+                    SecondaryButton(text = "Cancel", onClick = onCancel, modifier = Modifier.weight(1f))
+                    PrimaryButton(
+                        text = "Continue",
                         onClick = { onContinue(name) },
                         enabled = ReaderLogic.collapse(name).isNotEmpty(),
-                        modifier = Modifier.weight(1f).height(48.dp)
-                    ) { Text("Continue") }
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }

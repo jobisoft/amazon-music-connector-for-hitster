@@ -1,5 +1,6 @@
 package de.jobisoft.amster.ui.screens
 
+import de.jobisoft.amster.ui.components.Section
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,24 +10,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import de.jobisoft.amster.ui.components.BackButton
+import de.jobisoft.amster.ui.components.ScreenScaffold
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HelpScreen(
     onNavigateBack: () -> Unit
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Help") }
-            )
-        }
-    ) { paddingValues ->
+    ScreenScaffold(title = "Help") {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
         ) {
             Column(
                 modifier = Modifier
@@ -44,7 +38,7 @@ fun HelpScreen(
                     title = "Setup",
                     content = """
                         1. Install the Amazon Music app and log in.
-                        2. On the home screen tap "Open notification access settings" and switch AmSter on. AmSter needs this to start, pause and read the position of the song in the Amazon Music app. It does not read, store or send your notifications.
+                        2. On the home screen tap "Open notification access settings" and switch Amster on. Amster needs this to start, pause and read the position of the song in the Amazon Music app. It does not read, store or send your notifications.
                         3. Back on the home screen both setup lines show a tick.
                     """.trimIndent()
                 )
@@ -61,7 +55,7 @@ fun HelpScreen(
                 Section(
                     title = "Notes",
                     content = """
-                        • A value is wrong? Tap "Update manually", change the values and save. The update stays on this phone. "Export" in Reader Mode shares your updates as a file.
+                        • A value is wrong? Tap "Update manually", change the values and save. The update stays on this phone. "Export" on the main screen shares your updates as a file.
                         • A song is paused one second before its end, so Amazon should not go on with another song.
                         • If the Amazon Music app stays on top, go back to this app.
                         • "Card Config" imports more card sets from CSV files on the phone. A file needs the columns Card#, Title, Artist and Year.
@@ -78,32 +72,6 @@ fun HelpScreen(
                 )
             }
 
-            // Back button at the bottom
-            BackButton(
-                onClick = onNavigateBack,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
         }
-    }
-}
-
-@Composable
-private fun Section(
-    title: String,
-    content: String
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = content,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }

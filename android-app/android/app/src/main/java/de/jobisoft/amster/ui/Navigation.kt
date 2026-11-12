@@ -1,5 +1,10 @@
 package de.jobisoft.amster.ui
 
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.core.tween
 import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
@@ -41,9 +46,14 @@ sealed class Screen(val route: String) {
 fun AppNavigation(
     navController: NavHostController = rememberNavController()
 ) {
+    // a short fade with a small slide, every screen draws the same gradient, so it flows
     NavHost(
         navController = navController,
-        startDestination = Screen.Home.route
+        startDestination = Screen.Home.route,
+        enterTransition = { fadeIn(tween(220)) + slideInHorizontally(tween(220)) { it / 12 } },
+        exitTransition = { fadeOut(tween(160)) },
+        popEnterTransition = { fadeIn(tween(220)) },
+        popExitTransition = { fadeOut(tween(160)) + slideOutHorizontally(tween(160)) { it / 12 } }
     ) {
         composable(Screen.Home.route) {
             HomeScreen(

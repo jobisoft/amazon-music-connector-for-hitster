@@ -10,3 +10,4 @@ dist/mapping/
 
 __pycache__/
 *.pyc
+tools/debug_images/

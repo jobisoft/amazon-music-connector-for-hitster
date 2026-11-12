@@ -1,5 +1,8 @@
 package de.jobisoft.amster.ui.screens
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import de.jobisoft.amster.ui.components.GlassCardFull
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,7 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import de.jobisoft.amster.ui.components.BackButton
+import de.jobisoft.amster.ui.components.ScreenScaffold
 import de.jobisoft.amster.ui.viewmodel.OptionsViewModel
 import de.jobisoft.amster.util.StartPosition
 
@@ -46,11 +49,10 @@ fun OptionsScreen(
     val startPosition by viewModel.startPosition.collectAsState()
     val hideStatusBar by viewModel.hideStatusBar.collectAsState()
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Options") }) }) { paddingValues ->
+    ScreenScaffold(title = "Options") {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
         ) {
             Column(
                 modifier = Modifier
@@ -59,15 +61,11 @@ fun OptionsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                PreferIdSwitch(preferId, viewModel::setPreferId)
-                StartPositionDropdown(startPosition, viewModel::setStartPosition)
-                DuckSwitch(duckEnabled, startPosition != StartPosition.OFF, viewModel::setDuckEnabled)
-                StatusBarSwitch(hideStatusBar, viewModel::setHideStatusBar)
+                GlassCardFull { PreferIdSwitch(preferId, viewModel::setPreferId) }
+                GlassCardFull { StartPositionDropdown(startPosition, viewModel::setStartPosition) }
+                GlassCardFull { DuckSwitch(duckEnabled, startPosition != StartPosition.OFF, viewModel::setDuckEnabled) }
+                GlassCardFull { StatusBarSwitch(hideStatusBar, viewModel::setHideStatusBar) }
             }
-            BackButton(
-                onClick = onNavigateBack,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
         }
     }
 }
@@ -120,13 +118,19 @@ private fun StatusBarSwitch(enabled: Boolean, onChange: (Boolean) -> Unit) {
 private fun StartPositionDropdown(selected: StartPosition, onSelect: (StartPosition) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("Start position", style = MaterialTheme.typography.bodyMedium)
+        Text(
+            "Where a song starts after it loads.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(4.dp))
         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
             OutlinedTextField(
                 value = selected.label,
                 onValueChange = {},
                 readOnly = true,
                 singleLine = true,
-                label = { Text("Start position") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
@@ -144,11 +148,6 @@ private fun StartPositionDropdown(selected: StartPosition, onSelect: (StartPosit
                 }
             }
         }
-        Text(
-            "Where a song starts after it loads.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 

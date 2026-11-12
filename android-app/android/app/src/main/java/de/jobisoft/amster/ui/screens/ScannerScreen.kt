@@ -1,5 +1,6 @@
 package de.jobisoft.amster.ui.screens
 
+import de.jobisoft.amster.ui.theme.Dimens
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.SystemClock
@@ -33,7 +34,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import de.jobisoft.amster.ui.components.BackButton
+import de.jobisoft.amster.ui.components.PrimaryButton
+import de.jobisoft.amster.ui.components.ScreenScaffold
+import de.jobisoft.amster.ui.components.StatusChip
 import de.jobisoft.amster.ui.components.QRCodeScanner
 import de.jobisoft.amster.ui.components.SquareScanWindow
 import de.jobisoft.amster.ui.viewmodel.GameViewModel
@@ -96,16 +99,8 @@ fun ScannerScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Play Mode") })
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+    ScreenScaffold(title = "Play Mode", contentMaxWidth = Dimens.WideMaxWidth) {
+        Box(modifier = Modifier.fillMaxSize()) {
             if (uiState.sendState != SendState.IDLE) {
                 ResultView(
                     state = uiState,
@@ -114,15 +109,11 @@ fun ScannerScreen(
                     onControl = viewModel::control,
                     onToggleReveal = viewModel::toggleReveal,
                     onNext = viewModel::nextCard,
-                    onCancel = viewModel::cancelSending,
-                    onBack = {
-                        viewModel.leave() // stops the song, the navigation does not wait for it
-                        onNavigateBack()
-                    }
+                    onCancel = viewModel::cancelSending
                 )
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    SquareScanWindow(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    SquareScanWindow(modifier = Modifier.fillMaxWidth()) {
                         if (hasPermission) {
                             QRCodeScanner(
                                 onQRCodeScanned = { qrCode ->
@@ -143,29 +134,20 @@ fun ScannerScreen(
                             ) {
                                 Text("Camera permission is required to scan QR codes")
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Button(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
-                                    Text("Grant Permission")
-                                }
+                                PrimaryButton(
+                                    text = "Grant Permission",
+                                    onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }
+                                )
                             }
                         }
                     }
 
                     if (hasPermission) {
-                        Text(
+                        StatusChip(
                             "Scan within $secondsLeft s",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 8.dp)
                         )
                     }
-
-                    BackButton(
-                        onClick = {
-                            viewModel.leave()
-                            onNavigateBack()
-                        },
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
                 }
             }
         }

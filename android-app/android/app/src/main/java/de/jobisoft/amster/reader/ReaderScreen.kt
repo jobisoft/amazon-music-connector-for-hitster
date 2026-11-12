@@ -1,5 +1,10 @@
 package de.jobisoft.amster.reader
 
+import de.jobisoft.amster.ui.theme.AmsterTheme
+import de.jobisoft.amster.ui.components.StatusChip
+import de.jobisoft.amster.ui.components.GlassCardFull
+import de.jobisoft.amster.ui.components.SecondaryButton
+import de.jobisoft.amster.ui.components.PrimaryButton
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -51,10 +56,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import de.jobisoft.amster.ui.ExportShare
 import de.jobisoft.amster.ui.ReportCard
 import de.jobisoft.amster.ui.ReportWrongSection
-import de.jobisoft.amster.ui.components.BackButton
+import de.jobisoft.amster.ui.components.ScreenScaffold
 import de.jobisoft.amster.ui.components.QRCodeScanner
 import de.jobisoft.amster.ui.components.SquareScanWindow
 import de.jobisoft.amster.ui.components.SongTexts
@@ -82,25 +86,8 @@ fun ReaderScreen(
         if (!hasPermission) permissionLauncher.launch(Manifest.permission.CAMERA)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Reader Mode") },
-                actions = {
-                    TextButton(onClick = {
-                        val corrections = viewModel.corrections()
-                        if (corrections.isEmpty()) {
-                            viewModel.say("Nothing to export yet. Use \"Update manually\" on a card first.")
-                        } else if (!ExportShare.share(context, corrections)) {
-                            viewModel.say("The export did not work.")
-                        }
-                    }) { Text("Export") }
-                }
-            )
-        }
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            CountersBar(scanned = ui.scanned, updated = ui.counters.updated)
+    ScreenScaffold(title = "Reader Mode") {
+        Column(modifier = Modifier.fillMaxSize()) {
             SquareScanWindow(modifier = Modifier.fillMaxWidth()) {
                 if (hasPermission) {
                     val analysing = ui.ocr?.phase == OcrPhase.ANALYSING
@@ -121,7 +108,7 @@ fun ReaderScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text("Camera permission is required to scan QR codes")
-                        Button(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) { Text("Grant Permission") }
+                        PrimaryButton(text = "Grant Permission", onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) })
                     }
                 }
             }
@@ -144,12 +131,6 @@ fun ReaderScreen(
                     )
                 }
             }
-            BackButton(
-                onClick = {
-                    onNavigateBack()
-                },
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
         }
     }
     // the overlay that asks for the name of an unknown card set; scans are dropped while it is open
@@ -169,7 +150,7 @@ fun ReaderScreen(
 /** An unknown card: the screen says so and offers the two ways to add it. */
 @Composable
 private fun UnknownCardPanel(unknown: UnknownCard, ocrAvailable: Boolean, onAdd: (AddMode) -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    GlassCardFull(modifier = Modifier.padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("Unknown card ${unknown.pending.number}", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -183,10 +164,10 @@ private fun UnknownCardPanel(unknown: UnknownCard, ocrAvailable: Boolean, onAdd:
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
-        OutlinedButton(onClick = { onAdd(AddMode.MANUAL) }, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text("Add manually") }
+        SecondaryButton(text = "Add manually", onClick = { onAdd(AddMode.MANUAL) }, modifier = Modifier.fillMaxWidth())
         if (ocrAvailable) {
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedButton(onClick = { onAdd(AddMode.OCR) }, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text("Add via OCR") }
+            SecondaryButton(text = "Add via OCR", onClick = { onAdd(AddMode.OCR) }, modifier = Modifier.fillMaxWidth())
         }
     }
 }
@@ -194,22 +175,22 @@ private fun UnknownCardPanel(unknown: UnknownCard, ocrAvailable: Boolean, onAdd:
 /** Over the camera window while the analysis runs: the last good picture blurred (where the system can), a dark layer and a spinner. */
 @Composable
 private fun AnalysisCover(frame: android.graphics.Bitmap?) {
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF202020)), contentAlignment = Alignment.Center) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface), contentAlignment = Alignment.Center) {
         if (frame != null) {
             Image(
                 bitmap = frame.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().blur(24.dp)
             )
         }
-        Box(modifier = Modifier.fillMaxSize().background(Color(0x99000000)))
-        CircularProgressIndicator(color = Color.White)
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)))
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
     }
 }
 
 /** The OCR mode: what the user is to do, and a button to leave it. */
 @Composable
 private fun OcrBanner(ocr: OcrState, onCancel: () -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    GlassCardFull(modifier = Modifier.padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("Scan song information (OCR)", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
         Spacer(modifier = Modifier.height(8.dp))
         val hint = when (ocr.phase) {
@@ -225,20 +206,9 @@ private fun OcrBanner(ocr: OcrState, onCancel: () -> Unit) {
         Spacer(modifier = Modifier.height(4.dp))
         Text(ReaderLogic.UPDATES_NOTE, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         Spacer(modifier = Modifier.height(12.dp))
-        OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text("Cancel") }
+        SecondaryButton(text = "Cancel", onClick = onCancel, modifier = Modifier.fillMaxWidth())
     }
 }
-
-/** "Scanned n, updated u": the cards scanned in this visit, and the cards with a correction on this phone. */
-@Composable
-private fun CountersBar(scanned: Int, updated: Int) {
-    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 16.dp, vertical = 6.dp)) {
-        Text("Scanned $scanned, updated $updated", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
-private fun greenColor(): Color = if (isSystemInDarkTheme()) Color(0xFF81C784) else Color(0xFF2E7D32)
 
 /**
  * The scanned card: the four items one under the other, centered: artist, year (bigger, bold), title,
@@ -246,7 +216,7 @@ private fun greenColor(): Color = if (isSystemInDarkTheme()) Color(0xFF81C784) e
  */
 @Composable
 private fun CardResult(card: ReaderCard, onOcr: (() -> Unit)? = null) {
-    val accent = greenColor()
+    val extras = AmsterTheme.extras
     val text = MaterialTheme.colorScheme.onSurface
 
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -255,16 +225,16 @@ private fun CardResult(card: ReaderCard, onOcr: (() -> Unit)? = null) {
             Text("updated on this phone", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(modifier = Modifier.height(4.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            border = BorderStroke(1.dp, accent),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        GlassCardFull(
+            tint = extras.successContainer,
+            borderColor = extras.success.copy(alpha = 0.5f),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                SongTexts(card.artist, card.year?.toString() ?: "?", card.title, color = text) {
+                SongTexts(card.artist, card.year?.toString() ?: "?", card.title, color = text, yearBrush = extras.accentBrush) {
                     Text(ReaderLogic.cardNumberText(card.number), style = MaterialTheme.typography.bodySmall, color = text, textAlign = TextAlign.Center)
                 }
             }

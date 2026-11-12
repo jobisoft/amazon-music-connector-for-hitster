@@ -1,5 +1,6 @@
 package de.jobisoft.amster.ui.screens
 
+import de.jobisoft.amster.ui.components.GlassCardFull
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,7 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import de.jobisoft.amster.ui.components.BackButton
+import de.jobisoft.amster.ui.components.ScreenScaffold
 import de.jobisoft.amster.ui.viewmodel.CSVPreviewViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,17 +37,10 @@ fun CSVPreviewScreen(
         }
     }
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Preview: $fileName") }
-            )
-        }
-    ) { paddingValues ->
+    ScreenScaffold(title = "Preview: $fileName") {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
         ) {
             when {
                 isLoading -> {
@@ -74,17 +68,14 @@ fun CSVPreviewScreen(
                                     .verticalScroll(scrollState)
                                     .padding(16.dp)
                             ) {
-                                Text(
-                                    text = it,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                                GlassCardFull {
+                                    Text(
+                                        text = it,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
                             }
                             
-                            // Back button at the bottom
-                            BackButton(
-                                onClick = onNavigateBack,
-                                modifier = Modifier.align(Alignment.CenterHorizontally)
-                            )
                         }
                     }
                 }
