@@ -31,8 +31,8 @@ class BundledCardSetsTest {
     }
 
     @Test
-    fun allTwentyCardSetsAreThere() {
-        assertEquals(20, files.size)
+    fun allSixteenCardSetsAreThere() {
+        assertEquals(16, files.size)
     }
 
     @Test

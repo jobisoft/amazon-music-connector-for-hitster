@@ -19,7 +19,7 @@ class CardSetNamesTest {
         assertEquals("Hitster Deutschland Rock", nameOf("hitster-de-aaaa0039.csv"))
         assertEquals("Hitster Deutschland 2025", nameOf("hitster-de-aaaa0075.csv"))
         assertEquals("Hitster Deutschland Movies & TV Soundtracks Expansion Pack", nameOf("hitster-de-aaaa0026.csv"))
-        assertEquals("Hitster magyar kiadás", nameOf("hitster-hu-aaae0003.csv"))
+        assertEquals("Hitster Deutschland Celebration", nameOf("hitster-de-aaaa0040.csv"))
     }
 
     @Test

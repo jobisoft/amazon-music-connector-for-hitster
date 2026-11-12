@@ -1,2 +1,3 @@
 # Run logs of the scraper scripts
 amazon-web-scanner/logs/
+__pycache__/
